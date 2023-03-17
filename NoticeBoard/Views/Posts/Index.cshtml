@@ -1,0 +1,95 @@
+﻿@*@model IEnumerable<NoticeBoard.Models.Post>*@
+@model NoticeBoard.Models.PostCategoryViewModel
+@*@model NoticeBoard.Models.SortParm*@
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Index</h1>
+
+<p>
+    <a asp-action="Create">Create New</a>
+</p>
+
+<form asp-controller="Posts" asp-action="Index" method="get">
+    <p>
+        Category: <select asp-for="PostCategory" asp-items="Model.Categories">
+            <option value="">All</option>
+        </select>
+
+        <th>
+            Sort:
+            <select asp-for="SortOrder">
+                <option value="">Latest order</option>
+                <option value="PastOrder">Past order</option>
+            </select>
+        </th>
+
+        Title: <input type="text" asp-for="SearchString" />
+        <input type="submit" value="Filter" />
+    </p>
+</form>
+
+<table class="table">
+    <thead>
+        @*<tr>*@
+@*            <th>
+                <a asp-action="Index" asp-route-sortOrder="@ViewData["NameSortParm"]">@Html.DisplayNameFor(model => model.LastName)</a>
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.FirstMidName)
+            </th>*@
+@*            <th>
+                <a asp-action="Index" asp-route-sortOrder="@ViewData["SortParm"]"> Past order</a>
+            </th>
+            <th></th>
+        </tr>*@
+
+@*        <tr>*@
+            <th>
+                @Html.DisplayNameFor(model => model.Posts![0].Title)
+                @*!은 null이 아닌 Movies을 선언 하는 데 사용되는 null 용서 연산자입니다.*@
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Posts![0].Nickname)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Posts![0].LastUpdated)
+            </th>
+@*            <th>
+                @Html.DisplayNameFor(model => model.Posts![0].Content)
+            </th>*@
+            <th>
+                @Html.DisplayNameFor(model => model.Posts![0].Category)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model.Posts!) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.Title)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Nickname)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.LastUpdated)
+            </td>
+@*            <td>
+                @Html.DisplayFor(modelItem => item.Content)
+            </td>*@
+            <td>
+                @Html.DisplayFor(modelItem => item.Category)
+            </td>
+            <td>
+                    <a asp-action="Edit" asp-route-id="@item.PostId">Edit</a> |
+                    <a asp-action="Details" asp-route-id="@item.PostId">Details</a> |
+                    <a asp-action="Delete" asp-route-id="@item.PostId">Delete</a>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>
