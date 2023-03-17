@@ -23,6 +23,7 @@
             <select asp-for="SortOrder">
                 <option value="">Latest order</option>
                 <option value="PastOrder">Past order</option>
+                <option value="Views">Num of views</option>
             </select>
         </th>
 
@@ -57,11 +58,11 @@
             <th>
                 @Html.DisplayNameFor(model => model.Posts![0].LastUpdated)
             </th>
-@*            <th>
-                @Html.DisplayNameFor(model => model.Posts![0].Content)
-            </th>*@
             <th>
                 @Html.DisplayNameFor(model => model.Posts![0].Category)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Posts![0].Views)
             </th>
             <th></th>
         </tr>
@@ -78,11 +79,11 @@
             <td>
                 @Html.DisplayFor(modelItem => item.LastUpdated)
             </td>
-@*            <td>
-                @Html.DisplayFor(modelItem => item.Content)
-            </td>*@
             <td>
                 @Html.DisplayFor(modelItem => item.Category)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Views)
             </td>
             <td>
                     <a asp-action="Edit" asp-route-id="@item.PostId">Edit</a> |

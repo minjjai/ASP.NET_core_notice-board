@@ -50,11 +50,14 @@ namespace NoticeBoard.Controllers
 
             switch (sortOrder)
             {
+                default:
+                    posts = posts.OrderBy(s => s.LastUpdated);
+                    break;
                 case "PastOrder":
                     posts = posts.OrderByDescending(s => s.LastUpdated);
                     break;
-                default:
-                    posts = posts.OrderBy(s => s.LastUpdated);
+                case "Views":
+                    posts = posts.OrderByDescending(s => s.Views);
                     break;
             }
 
@@ -79,11 +82,17 @@ namespace NoticeBoard.Controllers
             var post = await _context.Posts
                 .Include(x => x.Comments)
                 .FirstOrDefaultAsync(m => m.PostId == id);
+
+            post.Views++;
+            //_context.Update(post);
+            await _context.SaveChangesAsync();
+
             if (post == null)
             {
                 return NotFound();
             }
 
+            ViewData["Views"] = post.Views;
             return View(post);
         }
 
