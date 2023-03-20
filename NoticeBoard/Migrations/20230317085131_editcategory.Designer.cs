@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NoticeBoard.Data;
 
@@ -11,9 +12,11 @@ using NoticeBoard.Data;
 namespace NoticeBoard.Migrations
 {
     [DbContext(typeof(NoticeBoardContext))]
-    partial class NoticeBoardContextModelSnapshot : ModelSnapshot
+    [Migration("20230317085131_editcategory")]
+    partial class editcategory
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -98,7 +101,12 @@ namespace NoticeBoard.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int?>("PostId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("PostId");
 
                     b.ToTable("FixedCategories");
                 });
@@ -112,9 +120,18 @@ namespace NoticeBoard.Migrations
                     b.Navigation("Post");
                 });
 
+            modelBuilder.Entity("noticeboard.models.FixedCategory", b =>
+                {
+                    b.HasOne("NoticeBoard.Models.Post", null)
+                        .WithMany("FixedCategories")
+                        .HasForeignKey("PostId");
+                });
+
             modelBuilder.Entity("NoticeBoard.Models.Post", b =>
                 {
                     b.Navigation("Comments");
+
+                    b.Navigation("FixedCategories");
                 });
 #pragma warning restore 612, 618
         }

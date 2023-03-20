@@ -1,6 +1,4 @@
-﻿@*@model IEnumerable<NoticeBoard.Models.Post>*@
-@model NoticeBoard.Models.PostCategoryViewModel
-@*@model NoticeBoard.Models.SortParm*@
+﻿@model NoticeBoard.Models.PostsViewModel
 
 @{
     ViewData["Title"] = "Index";
@@ -14,7 +12,7 @@
 
 <form asp-controller="Posts" asp-action="Index" method="get">
     <p>
-        Category: <select asp-for="PostCategory" asp-items="Model.Categories">
+        Category: <select asp-for="PostCategory" asp-items="Model.Categories"> 
             <option value="">All</option>
         </select>
 
@@ -34,20 +32,6 @@
 
 <table class="table">
     <thead>
-        @*<tr>*@
-@*            <th>
-                <a asp-action="Index" asp-route-sortOrder="@ViewData["NameSortParm"]">@Html.DisplayNameFor(model => model.LastName)</a>
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.FirstMidName)
-            </th>*@
-@*            <th>
-                <a asp-action="Index" asp-route-sortOrder="@ViewData["SortParm"]"> Past order</a>
-            </th>
-            <th></th>
-        </tr>*@
-
-@*        <tr>*@
             <th>
                 @Html.DisplayNameFor(model => model.Posts![0].Title)
                 @*!은 null이 아닌 Movies을 선언 하는 데 사용되는 null 용서 연산자입니다.*@
@@ -59,7 +43,7 @@
                 @Html.DisplayNameFor(model => model.Posts![0].LastUpdated)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.Posts![0].Category)
+            @Html.DisplayNameFor(model => model.Posts![0].Category)
             </th>
             <th>
                 @Html.DisplayNameFor(model => model.Posts![0].Views)
@@ -71,7 +55,7 @@
 @foreach (var item in Model.Posts!) {
         <tr>
             <td>
-                @Html.DisplayFor(modelItem => item.Title)
+                    <a asp-action="Details"  asp-route-id="@item.PostId">@Html.DisplayFor(modelItem => item.Title)</a>
             </td>
             <td>
                 @Html.DisplayFor(modelItem => item.Nickname)
@@ -80,7 +64,7 @@
                 @Html.DisplayFor(modelItem => item.LastUpdated)
             </td>
             <td>
-                @Html.DisplayFor(modelItem => item.Category)
+                    @Html.DisplayFor(modelItem => item.Category)
             </td>
             <td>
                 @Html.DisplayFor(modelItem => item.Views)
@@ -94,3 +78,15 @@
 }
     </tbody>
 </table>
+<div class="pagination">
+    <nav>
+        <ul class="pagination">
+            @for (int i = 1; i <= Model.TotalPages; i++)
+            {
+                   <button class="@(i == Model.CurrentPage ? "active" : "")">
+                        <a href="?page=@i&amp;sortOrder=@Model.SortOrder&amp;postCategory=@Model.PostCategory&amp;searchString=@Model.SearchString">@i</a>
+                    </button>
+            }
+        </ul>
+    </nav>
+</div>

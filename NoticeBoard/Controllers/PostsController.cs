@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 using NoticeBoard.Data;
 using NoticeBoard.Models;
 
@@ -22,20 +23,23 @@ namespace NoticeBoard.Controllers
         }
 
         // GET: Posts
-        public async Task<IActionResult> Index(string postCategory, string searchString, string sortOrder)
+        public async Task<IActionResult> Index(string postCategory, string searchString, string sortOrder, int? page)
         {
             if (_context.Posts == null)
             {
                 return Problem("Entity set 'NoticeBoard.Post'  is null.");
             }
 
+            int pageSize = 3;
+            int pageNumber = (page ?? 1);
+
             // Use LINQ to get list of genres.
             IQueryable<string> categoryQuery = from m in _context.Posts
                                             orderby m.Category
-                                            select m.Category;
+                                               select m.Category;
 
             var posts = from m in _context.Posts
-                         select m;
+                        select m;
 
 
             if (!string.IsNullOrEmpty(searchString))
@@ -51,24 +55,31 @@ namespace NoticeBoard.Controllers
             switch (sortOrder)
             {
                 default:
-                    posts = posts.OrderBy(s => s.LastUpdated);
+                    posts = posts.OrderByDescending(s => s.LastUpdated);
                     break;
                 case "PastOrder":
-                    posts = posts.OrderByDescending(s => s.LastUpdated);
+                    posts = posts.OrderBy(s => s.LastUpdated);
                     break;
                 case "Views":
                     posts = posts.OrderByDescending(s => s.Views);
                     break;
             }
 
-            var postCategoryVM = new PostCategoryViewModel
-            {
-                Categories = new SelectList(await categoryQuery.Distinct().ToListAsync()),
+            var totalPosts = await posts.CountAsync();
+            var totalPages = (int)Math.Ceiling((decimal)totalPosts / pageSize);
 
-                Posts = await posts.ToListAsync()
+            var viewModel = new PostsViewModel
+            {
+                Posts = await posts.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync(),
+                TotalPages = totalPages,
+                CurrentPage = pageNumber,
+                PageSize = pageSize,
+                PostCategory = postCategory,
+                SearchString = searchString,
+                SortOrder = sortOrder
             };
 
-            return View(postCategoryVM);
+            return View(viewModel);
         }
 
         // GET: Posts/Details/5
@@ -97,9 +108,20 @@ namespace NoticeBoard.Controllers
         }
 
         // GET: Posts/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            return View();
+            var categories = await _context.FixedCategories.Select(c => new SelectListItem
+            {
+                Value = c.Categories,
+                Text = c.Categories
+            }).ToListAsync();
+
+            var model = new CategoryViewModel
+            {
+                Categories = categories
+            };
+
+            return View(model);
         }
 
         // POST: Posts/Create
@@ -118,23 +140,36 @@ namespace NoticeBoard.Controllers
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
+
             return View(post);
         }
 
         // GET: Posts/Edit/5
         public async Task<IActionResult> Edit(int id)
         {
-            //if (id == null || _context.Posts == null)
-            //{
-            //    return NotFound();
-            //}
-
             var post = await _context.Posts.FindAsync(id);
+
             if (post == null)
             {
                 return NotFound();
             }
-            return View(post);
+
+            var categories = await _context.FixedCategories.ToListAsync();
+            var viewModel = new CategoryViewModel
+            {
+                PostId = post.PostId,
+                Nickname = post.Nickname,
+                Title = post.Title,
+                Content = post.Content,
+                Categories = categories.Select(c => new SelectListItem
+                {
+                    Text = c.Categories,
+                    Value = c.Categories,
+                    Selected = (post.Category == c.Categories)
+                })
+            };
+
+            return View(viewModel);
         }
 
         // POST: Posts/Edit/5
