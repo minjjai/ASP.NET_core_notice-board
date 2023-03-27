@@ -15,6 +15,8 @@ namespace NoticeBoard.Data
         public DbSet<Post> Posts { get; set; } 
         public DbSet<Comment> Comments { get; set; }
         public DbSet<FixedCategory> FixedCategories { get; set; }
+        public DbSet<AttachFile> AttachFiles { get; set; }
+
         public NoticeBoardContext(DbContextOptions<NoticeBoardContext> options)
             : base(options)
         {

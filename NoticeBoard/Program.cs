@@ -10,6 +10,8 @@ builder.Services.AddDbContext<NoticeBoardContext>(options =>
 builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
+//IConfiguration configuration = app.Configuration;
+//IWebHostEnvironment environment = app.Environment;
 
 using (var scope = app.Services.CreateScope())
 {
@@ -25,6 +27,7 @@ if (!app.Environment.IsDevelopment())
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
+
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();

@@ -5,47 +5,229 @@
     ViewData["Title"] = "Create";
 }
 
-<h1>Create</h1>
+<div class="col-md-8">
+    <h1>Create</h1>
 
-<h4>Post</h4>
-<hr />
+    <h4>Post</h4>
+    <hr />
+</div>
+@*<form enctype="multipart/form-data" method="post" action="/Posts/Create">*@
 <div class="row">
-    <div class="col-md-4">
-        <form asp-action="Create">
+    <div class="col-md-8">
+        <div class="col-md-5">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <div class="form-group">
                 <label asp-for="Nickname" class="control-label"></label>
-                <input asp-for="Nickname" class="form-control" />
+                <input asp-for="Nickname" class="form-control" id="Nickname" />
                 <span asp-validation-for="Nickname" class="text-danger"></span>
             </div>
+        </div>
+
+        <div class="col-md-12">
             <div class="form-group">
                 <label asp-for="Title" class="control-label"></label>
-                <input asp-for="Title" class="form-control" />
+                <input asp-for="Title" class="form-control" id="Title" />
                 <span asp-validation-for="Title" class="text-danger"></span>
             </div>
             <div class="form-group">
                 <label asp-for="Content" class="control-label"></label>
-                <input asp-for="Content" class="form-control" />
+                <textarea class="form-control" id="Content" rows="5"></textarea>
                 <span asp-validation-for="Content" class="text-danger"></span>
             </div>
             <div class="form-group">
-               <div>Category</div> 
-               <select asp-for="Category" asp-items="Model.Categories">
+                <div>Category</div>
+                <select name="Category" asp-items="Model.Categories" id="Category">
                     <option value="">-- Select --</option>
                 </select>
                 <span asp-validation-for="Category" class="text-danger"></span>
             </div>
-            <div class="form-group">
-                <input type="submit" value="Create" class="btn btn-primary" />
-            </div>
-        </form>
+        </div>
+        <div id="dropzone">
+            <form class="dropzone" id="myDropzone">
+                <div class="dz-message needsclick">
+                    <span class="text">
+                        <img src="https://www.freeiconspng.com/uploads/------------------------------iconpngm--22.png" alt="Camera" />
+                        Drop files here or click to upload.
+                    </span>
+                    <span class="plus">+</span>
+                </div>
+            </form>
+        </div>
+        <div class="form-group">
+            <button type="submit" value="Create" class="btn btn-primary" id="submit">Create</button>
+        </div>
+        <div>
+
+            <a asp-action="Index" style="float:right; margin-top:10px">Back to List</a></p>
+
+        </div>
     </div>
 </div>
 
-<div>
-    <a asp-action="Index">Back to List</a>
-</div>
 
+
+
+@*</form>*@
+
+<style>
+    body {
+        background: #EEE;
+        font-family: 'Roboto', sans-serif;
+    }
+
+    .btn.btn-primary {
+        float: right;
+        margin-top: 10px;
+        margin-left: 10px;
+        margin-right: 10px;
+    }
+
+    .dropzone {
+        width: 98%;
+        margin: 1%;
+        border: 2px dashed #3498db !important;
+        border-radius: 5px;
+        -webkit-transition: .2s;
+        transition: .2s;
+    }
+
+        .dropzone.dz-drag-hover {
+            border: 2px solid #3498db !important;
+        }
+
+    .dz-message.needsclick img {
+        width: 50px;
+        display: block;
+        margin: auto;
+        opacity: .6;
+        margin-bottom: 15px;
+    }
+
+    span.plus {
+        display: none;
+    }
+
+    .dropzone.dz-started .dz-message {
+        display: inline-block !important;
+        width: 120px;
+        float: right;
+        border: 1px solid rgba(238, 238, 238, 0.36);
+        border-radius: 30px;
+        height: 120px;
+        margin: 16px;
+        -webkit-transition: .2s;
+        transition: .2s;
+    }
+
+        .dropzone.dz-started .dz-message span.text {
+            display: none;
+        }
+
+        .dropzone.dz-started .dz-message span.plus {
+            display: block;
+            font-size: 70px;
+            color: #AAA;
+            line-height: 110px;
+        }
+</style>
+
+
+
+@{
+    await Html.RenderPartialAsync("_ValidationScriptsPartial");
+}
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+
+    @*    <script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/dropzone@5/dist/min/dropzone.min.css" type="text/css" />*@
+
+    <script>
+
+        Dropzone.options.myDropzone = {
+
+            url: 'https://localhost:7004/posts/create',
+            method: 'POST',
+
+            autoProcessQueue: false, // 자동으로 보내기
+            clickable: true, // 클릭 가능 여부
+            //autoQueue: false,
+            createImageThumbnails: true,
+
+            thumbnailHeight: 120,
+            thumbnailWidth: 120,
+
+            maxFiles: 2, // 업로드 파일수
+            maxFilesize: 100,
+            paramName: 'files',
+            parallelUploads: 2, // 동시파일업로드 수(이걸 지정한 수 만큼 여러파일을 한번에 넘긴다.)
+            uploadMultiple: true, // 다중업로드 기능
+            timeout: 300000,
+
+            addRemoveLinks: true,
+            dictRemoveFile: 'Delete',
+
+            init: function () {
+                console.log('최초 실행');
+                var myDropzone = this;
+                // 서버에 제출 submit 버튼 이벤트 등록
+                document.querySelector('#submit').addEventListener('click', function (e) {
+                    console.log('업로드')
+                    e.preventDefault();
+                    //e.stopPropagation();
+                    console.log(myDropzone.files)
+                    if (myDropzone.files.length == 0) {
+
+                        var formData = new FormData();
+                        formData.append("Nickname", document.getElementById("Nickname").value);
+                        formData.append("Title", document.getElementById("Title").value);
+                        formData.append("Content", document.getElementById("Content").value);
+                        formData.append("Category", document.getElementById("Category").value);
+                        //context.HttpContext.Response.Cookies.Append(
+                        //    "RequestVerificationToken",
+                        //    tokens.RequestToken,
+                        //    new CookieOptions() { HttpOnly = false });
+
+                        fetch('/posts/Create', {
+                            body: formData,
+                            method: "POST",
+                            contentType: false
+                        })
+                            .then((succrss) => {
+                                window.location.href = '/posts/index'
+                            })
+                    } else {
+                        console.log("hi");
+                        myDropzone.processQueue();
+                    }
+
+                });
+
+                // 업로드한 파일을 서버에 요청하는 동안 호출 실행
+                this.on('sending', function (file, xhr, formData) {
+                    console.log('보내는중');
+
+
+                    formData.append("Nickname", document.getElementById("Nickname").value);
+                    formData.append("Title", document.getElementById("Title").value);
+                    formData.append("Content", document.getElementById("Content").value);
+                    formData.append("Category", document.getElementById("Category").value);
+
+                });
+
+                // 서버로 파일이 성공적으로 전송되면 실행
+                this.on('success', function (file, responseText) {
+                    window.location.href = '/posts/index'
+                    console.log('성공');
+                });
+
+                // 업로드 에러 처리
+                this.on('error', function (file, errorMessage) {
+                    alert(errorMessage);
+                });
+            },//init
+
+        };
+
+
+    </script>
 }

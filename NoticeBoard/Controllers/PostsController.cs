@@ -9,6 +9,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using NoticeBoard.Data;
 using NoticeBoard.Models;
+using Microsoft.AspNetCore.Http;
+using System.IO;
+using System.Net.Mail;
+using Azure.Core;
+using Microsoft.CodeAnalysis.Elfie.Serialization;
+using NoticeBoard.Migrations;
 
 namespace NoticeBoard.Controllers
 {
@@ -16,10 +22,12 @@ namespace NoticeBoard.Controllers
     public class PostsController : Controller
     {
         private readonly NoticeBoardContext _context;
+        private IWebHostEnvironment hostEnv;
 
-        public PostsController(NoticeBoardContext context)
+        public PostsController(NoticeBoardContext context, IWebHostEnvironment env)
         {
             _context = context;
+            hostEnv = env;
         }
 
         // GET: Posts
@@ -30,12 +38,13 @@ namespace NoticeBoard.Controllers
                 return Problem("Entity set 'NoticeBoard.Post'  is null.");
             }
 
-            int pageSize = 3;
-            int pageNumber = (page ?? 1);
+            int pageSize = 8;
+            int pageNumber = page.HasValue && page.Value > 0 ? page.Value : 1;
+            //페이지값이 널인경우 1을 반환 1보다 안작아서 페이지값가져옴 페이지가 널이아니면 페이지값반환 1보다 작을시 1을 반환
 
             // Use LINQ to get list of genres.
             IQueryable<string> categoryQuery = from m in _context.Posts
-                                            orderby m.Category
+                                               orderby m.Category
                                                select m.Category;
 
             var posts = from m in _context.Posts
@@ -92,6 +101,7 @@ namespace NoticeBoard.Controllers
 
             var post = await _context.Posts
                 .Include(x => x.Comments)
+                .Include(x => x.AttachFiles)
                 .FirstOrDefaultAsync(m => m.PostId == id);
 
             post.Views++;
@@ -128,20 +138,43 @@ namespace NoticeBoard.Controllers
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Nickname,Title,Content,Category")] Post post)
+        //[ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create([FromForm] Post post, [FromForm] ICollection<IFormFile>? Files = null)
         {
-            if (ModelState.IsValid)
+            DateTime datetime = DateTime.Now;
+            post.LastUpdated = datetime;
+            _context.Add(post);
+            await _context.SaveChangesAsync();
+
+            if (Request.Form.Files.Count > 0)
             {
-                DateTime datetime = DateTime.Now;
-                post.LastUpdated = datetime;
+                var uploadPath = Path.Combine(hostEnv.WebRootPath, "Files");
+                var files = Request.Form.Files;
+                for (var i = 0; i < files.Count; i++)
+                {
+                    var file = files[i];
+                    string filePath = Path.Combine(uploadPath, file.FileName).Replace("\\", "/");
+                    using (FileStream fs = System.IO.File.Create(filePath))
+                    {
+                        await file.CopyToAsync(fs); //업로드된 파일 타겟의 내용을 비동기적으로 복사
+                    }
 
-                _context.Add(post);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+
+                    //string combinedFilePaths = string.Join(",", filePaths);
+
+                    var attachFile = new AttachFile
+                    {
+                        FileName = file.FileName,
+                        FilePath = filePath,
+                        FileData = System.IO.File.ReadAllBytes(filePath),
+                        PostId = post.PostId
+                    };
+                    _context.Attach(attachFile); //이미 데이터베이스에 있는 엔터티를 수정하려는 경우 사용
+                    await _context.SaveChangesAsync();
+                }
             }
+            return RedirectToAction(nameof(Index));
 
-            return View(post);
         }
 
         // GET: Posts/Edit/5
@@ -149,35 +182,76 @@ namespace NoticeBoard.Controllers
         {
             var post = await _context.Posts.FindAsync(id);
 
-            if (post == null)
+            if ( await _context.AttachFiles.FirstOrDefaultAsync(p => p.PostId == id) != null)
             {
-                return NotFound();
+                var file = await _context.AttachFiles
+                    .Where(x => x.PostId == id)
+                .FirstOrDefaultAsync();
+
+                var categories = await _context.FixedCategories.ToListAsync();
+                var viewModel = new CategoryViewModel
+                {
+                    FileId = file.FileId,
+                    PostId = post.PostId,
+                    Nickname = post.Nickname,
+                    Title = post.Title,
+                    Content = post.Content,
+                    Categories = categories.Select(c => new SelectListItem
+                    {
+                        Text = c.Categories,
+                        Value = c.Categories,
+                        Selected = (post.Category == c.Categories)
+                    })
+                };
+
+                return View(viewModel);
+            }
+            else
+            {
+
+                var categories = await _context.FixedCategories.ToListAsync();
+                var viewModel = new CategoryViewModel
+                {
+                    PostId = post.PostId,
+                    Nickname = post.Nickname,
+                    Title = post.Title,
+                    Content = post.Content,
+                    Categories = categories.Select(c => new SelectListItem
+                    {
+                        Text = c.Categories,
+                        Value = c.Categories,
+                        Selected = (post.Category == c.Categories)
+                    })
+                };
+
+                return View(viewModel);
             }
 
-            var categories = await _context.FixedCategories.ToListAsync();
-            var viewModel = new CategoryViewModel
-            {
-                PostId = post.PostId,
-                Nickname = post.Nickname,
-                Title = post.Title,
-                Content = post.Content,
-                Categories = categories.Select(c => new SelectListItem
-                {
-                    Text = c.Categories,
-                    Value = c.Categories,
-                    Selected = (post.Category == c.Categories)
-                })
-            };
 
-            return View(viewModel);
         }
+
+
+        [HttpGet]
+        public IActionResult GetFiles(int id)
+        {
+            var files = _context.AttachFiles.Where(p => p.PostId == id).ToList();
+            var result = files.Select(p => new
+            {
+                FileId = p.FileId,
+                FileName = p.FileName,
+                FileSize = p.FileData.Length
+            });
+            Console.WriteLine(result);
+            return Json(result);
+        }
+
 
         // POST: Posts/Edit/5
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("PostId,Nickname,Title,Content,Category")] Post post)
+        //[ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, [FromForm] Post post, [FromForm] string? FileId = null, ICollection<IFormFile>? Files = null)
         {
             if (id != post.PostId)
             {
@@ -188,9 +262,14 @@ namespace NoticeBoard.Controllers
             {
                 try
                 {
+                    var Post = await _context.Posts.FirstOrDefaultAsync(p => p.PostId == id);
                     DateTime datetime = DateTime.Now;
-                    post.LastUpdated = datetime;
-                    _context.Update(post);
+                    Post.Nickname = post.Nickname;
+                    Post.Title = post.Title;
+                    Post.Content = post.Content;
+                    Post.LastUpdated = datetime;
+                    Post.Category = post.Category;
+                    _context.Update(Post);
                     await _context.SaveChangesAsync();
                 }
                 catch (DbUpdateConcurrencyException)
@@ -206,6 +285,65 @@ namespace NoticeBoard.Controllers
                 }
                 //return RedirectToAction(nameof(Index));
             }
+            if (Request.Form.Files.Count != 0)
+            {
+                var uploadPath = Path.Combine(hostEnv.WebRootPath, "Files");
+                var files = Request.Form.Files;
+                try
+                {
+                    for (var i = 0; i < files.Count; i++)
+                    {
+                        var file = files[i];
+                        string filePath = Path.Combine(uploadPath, file.FileName).Replace("\\", "/");
+                        using (FileStream fs = System.IO.File.Create(filePath))
+                        {
+                            await file.CopyToAsync(fs);
+                        }
+                        // Attachfile 모델에 파일 데이터 저장
+                        var attachFile = new AttachFile
+                        {
+                            FileName = file.FileName,
+                            FilePath = filePath,
+                            FileData = System.IO.File.ReadAllBytes(filePath),
+                            PostId = post.PostId
+                        };
+
+                        _context.Attach(attachFile);
+                        await _context.SaveChangesAsync();
+                    }
+                }
+                catch (Exception)
+                {
+                    return StatusCode(500);
+                }
+            }
+            if (FileId != null)
+            {
+                string[] fileIds = FileId.Split(',');
+                var array = fileIds.Skip(1).ToArray();
+                foreach (var deleteFileId in array)
+                {
+                    var intFileId = int.Parse(deleteFileId);
+                    var filePaths = await _context.AttachFiles
+                        .Where(p => p.FileId == intFileId)
+                        .Select(p => p.FilePath)
+                        .ToListAsync();
+                    foreach (var filePath in filePaths)
+                    {
+                        if (System.IO.File.Exists(filePath))
+                        {
+                            System.IO.File.Delete(filePath);
+                        }
+                    }
+                    var deleteAttachFileId = await _context.AttachFiles.FindAsync(intFileId);
+                    if (deleteAttachFileId != null)
+                    {
+                        _context.Remove(deleteAttachFileId);
+                    }
+                    await _context.SaveChangesAsync();
+                }
+            }
+
             return RedirectToAction("Details", new { id = id });
         }
 
@@ -236,6 +374,27 @@ namespace NoticeBoard.Controllers
             {
                 return Problem("Entity set 'NoticeBoardContext.Post'  is null.");
             }
+            var filePaths = await _context.AttachFiles
+                .Where(p => p.PostId == id)
+                .Select(p => p.FilePath)
+                .ToListAsync();
+
+            foreach (var filePath in filePaths)
+            {
+                if (System.IO.File.Exists(filePath))
+                {
+                    System.IO.File.Delete(filePath);
+                }
+            }
+
+            var attachfiles = await _context.AttachFiles
+                .Where(p => p.PostId == id)
+                .ToListAsync();
+
+            foreach (var attachfile in attachfiles)
+            {
+                _context.AttachFiles.Remove(attachfile);
+            }
 
             var comments = _context.Comments.Where(c => c.PostId == id);
             _context.Comments.RemoveRange(comments);
@@ -245,11 +404,39 @@ namespace NoticeBoard.Controllers
             {
                 _context.Posts.Remove(post);
             }
-            
+
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
+        [HttpDelete]
+        public async Task<IActionResult> DeleteIds(string id)
+        {
+            string[] splitId = id.Split(",");
+
+            if (_context.Posts == null)
+            {
+                return BadRequest();
+            }
+
+            bool Remove = false;
+
+            for (int i = 0; i < splitId.Length; i++)
+            {
+                var intId = int.Parse(splitId[i]);
+                var post = await _context.Posts.FindAsync(intId);
+                if (post != null)
+                {
+                    _context.Posts.Remove(post);
+                    Remove = true;
+                }
+            }
+
+            if (Remove)
+                await _context.SaveChangesAsync();
+
+            return Ok();
+        }
         // POST: Posts/Detail/:postId
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -269,7 +456,7 @@ namespace NoticeBoard.Controllers
 
             await _context.SaveChangesAsync();
             return RedirectToAction("Details", new { id = id });
-        //}
+            //}
         }
 
         // POST: Posts/DeleteC/5
@@ -293,7 +480,7 @@ namespace NoticeBoard.Controllers
 
         private bool PostExists(int id)
         {
-          return (_context.Posts?.Any(e => e.PostId == id)).GetValueOrDefault();
+            return (_context.Posts?.Any(e => e.PostId == id)).GetValueOrDefault();
         }
     }
 }

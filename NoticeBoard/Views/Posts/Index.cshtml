@@ -3,90 +3,171 @@
 @{
     ViewData["Title"] = "Index";
 }
-
-<h1>Index</h1>
-
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
+<div class="mainTitle" style="text-align: center; margin-bottom:80px; margin-top:30px">
+    <h1>Minjae Board</h1>
+</div>
 
 <form asp-controller="Posts" asp-action="Index" method="get">
     <p>
-        Category: <select asp-for="PostCategory" asp-items="Model.Categories"> 
-            <option value="">All</option>
-        </select>
+        <div>
+            Category:
+            <select asp-for="PostCategory" asp-items="Model.Categories">
+                <option value="">All</option>
+            </select>
 
-        <th>
+
             Sort:
             <select asp-for="SortOrder">
                 <option value="">Latest order</option>
                 <option value="PastOrder">Past order</option>
                 <option value="Views">Num of views</option>
             </select>
-        </th>
 
-        Title: <input type="text" asp-for="SearchString" />
-        <input type="submit" value="Filter" />
+
+            Title: <input type="text" asp-for="SearchString" />
+            <input type="submit" value="Filter" />
+
+
+            <div class="a" style="float:right; display:inline; margin-right:20px">
+                <input asp-action="Create" type="submit" value="Create New!" />
+            </div>
+        </div>
     </p>
 </form>
 
-<table class="table">
+
+<table class="table" id="DataTable">
     <thead>
-            <th>
-                @Html.DisplayNameFor(model => model.Posts![0].Title)
-                @*!은 null이 아닌 Movies을 선언 하는 데 사용되는 null 용서 연산자입니다.*@
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Posts![0].Nickname)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Posts![0].LastUpdated)
-            </th>
-            <th>
+    <th>
+
+    </th>
+    <th>
+            @Html.DisplayNameFor(model => model.Posts![0].Title)
+            @*!은 null이 아닌 Movies을 선언 하는 데 사용되는 null 용서 연산자입니다.*@
+    </th>
+    <th>
+        Author
+    </th>
+    <th>
+            @Html.DisplayNameFor(model => model.Posts![0].LastUpdated)
+    </th>
+    <th>
             @Html.DisplayNameFor(model => model.Posts![0].Category)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Posts![0].Views)
-            </th>
-            <th></th>
-        </tr>
+    </th>
+    <th>
+            @Html.DisplayNameFor(model => model.Posts![0].Views)
+    </th>
+    <th></th>
+    </tr>
     </thead>
     <tbody>
-@foreach (var item in Model.Posts!) {
-        <tr>
-            <td>
-                    <a asp-action="Details"  asp-route-id="@item.PostId">@Html.DisplayFor(modelItem => item.Title)</a>
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Nickname)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.LastUpdated)
-            </td>
-            <td>
+        @foreach (var item in Model.Posts!)
+        {
+            <tr>
+                <td>
+                    <input type="checkbox" class="checkBox" value="@item.PostId" Id="CheckBoxId" />
+                </td>
+                <td>
+                    <a asp-action="Details" asp-route-id="@item.PostId">@Html.DisplayFor(modelItem => item.Title)</a>
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Nickname)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.LastUpdated)
+                </td>
+                <td>
                     @Html.DisplayFor(modelItem => item.Category)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Views)
-            </td>
-            <td>
-                    <a asp-action="Edit" asp-route-id="@item.PostId">Edit</a> |
-                    <a asp-action="Details" asp-route-id="@item.PostId">Details</a> |
-                    <a asp-action="Delete" asp-route-id="@item.PostId">Delete</a>
-            </td>
-        </tr>
-}
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Views)
+                </td>
+                @*            <td>
+            <a asp-action="Edit" asp-route-id="@item.PostId">Edit</a> |
+            <a asp-action="Details" asp-route-id="@item.PostId">Details</a> |
+            <a asp-action="Delete" asp-route-id="@item.PostId">Delete</a>
+            </td>*@
+            </tr>
+        }
     </tbody>
 </table>
-<div class="pagination">
-    <nav>
+<input type="submit" id="checkBoxAll" value="Delete Selected Posts" />
+
+<div class="pagination justify-content-center" style="margin-top:10px; margin-right:50px">
+    <nav aria-label="Page navigation example">
         <ul class="pagination">
+            <li class="page-item"><a class="page-link" href="?page=@(Model.CurrentPage - 1)&amp;sortOrder=@Model.SortOrder&amp;postCategory=@Model.PostCategory&amp;searchString=@Model.SearchString">Previous</a></li>
             @for (int i = 1; i <= Model.TotalPages; i++)
             {
-                   <button class="@(i == Model.CurrentPage ? "active" : "")">
-                        <a href="?page=@i&amp;sortOrder=@Model.SortOrder&amp;postCategory=@Model.PostCategory&amp;searchString=@Model.SearchString">@i</a>
-                    </button>
+                <li class="@(i == Model.CurrentPage ? "active" : "")">
+                    <a class="page-link" href="?page=@i&amp;sortOrder=@Model.SortOrder&amp;postCategory=@Model.PostCategory&amp;searchString=@Model.SearchString">@i</a>
+                </li>
             }
+            <li class="page-item"><a class="page-link" href="?page=@(Model.CurrentPage + 1)&amp;sortOrder=@Model.SortOrder&amp;postCategory=@Model.PostCategory&amp;searchString=@Model.SearchString">Next</a></li>
         </ul>
     </nav>
 </div>
+
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<script type="text/javascript" src="https://ajax.cdnjs.com/ajax/libs/json2/20110223/json2.js"></script>
+<script>
+    $(document).ready(function () {
+        $('#checkBoxAll').click(function () {
+            var ids = [];
+            $('.checkBox').each(function () {
+                if ($(this).prop('checked')) {
+                    ids.push($(this).val());
+                }
+            });
+            if (ids.length > 0) {
+                console.log(ids)
+                var id = ids.join(",")
+                console.log(id)
+                if (confirm('선택한 항목을 삭제하시겠습니까?')) {
+                    $.ajax({
+                        url: '/Posts/DeleteIds?id=' + id,
+                        type: 'Delete',
+                        success: function (result) {
+                            alert("삭제되었습니다.")
+                            location.reload();
+                        }
+                    });
+                }
+            } else {
+                alert('삭제할 항목을 선택해주세요.');
+            }
+        });
+    });
+        //$(document).ready(function () {
+
+        //    $("#checkBoxAll").click(function () {
+        //        var PostIds = new Array();
+        //        $('.checkBox').each(function () {
+        //            if ($(this).prop('checked')) {
+        //                console.log($(this).val())
+        //                PostIds.push($(this).val());
+        //            }
+        //        });
+
+        //        if (PostIds.length === 0) {
+        //            alert("Please select at least one checkbox.");
+        //            return;
+        //        }
+
+        //        $.ajax({
+        //            type: "POST",
+        //            url: "/Posts/DeleteSelectedId",
+        //            data: JSON.stringify(PostIds),
+        //            contentType: "application/json",
+        //            dataType: "json",
+        //            success: function (result) {
+        //                alert(result);
+        //                window.location.reload();
+        //            },
+        //            error: function () {
+        //                alert("An error occurred while processing the request.");
+        //            }
+        //        });
+        //    });
+        //});
+</script>
