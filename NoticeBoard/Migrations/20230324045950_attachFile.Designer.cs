@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NoticeBoard.Data;
 
@@ -11,9 +12,11 @@ using NoticeBoard.Data;
 namespace NoticeBoard.Migrations
 {
     [DbContext(typeof(NoticeBoardContext))]
-    partial class NoticeBoardContextModelSnapshot : ModelSnapshot
+    [Migration("20230324045950_attachFile")]
+    partial class attachFile
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -47,9 +50,7 @@ namespace NoticeBoard.Migrations
 
                     b.HasKey("FileId");
 
-                    b.HasIndex("PostId");
-
-                    b.ToTable("AttachFiles");
+                    b.ToTable("AttachFile");
                 });
 
             modelBuilder.Entity("NoticeBoard.Models.Comment", b =>
@@ -94,6 +95,9 @@ namespace NoticeBoard.Migrations
                         .HasMaxLength(60)
                         .HasColumnType("nvarchar(60)");
 
+                    b.Property<string>("FilePaths")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime>("LastUpdated")
                         .HasColumnType("datetime2");
 
@@ -133,17 +137,6 @@ namespace NoticeBoard.Migrations
                     b.ToTable("FixedCategories");
                 });
 
-            modelBuilder.Entity("NoticeBoard.Models.AttachFile", b =>
-                {
-                    b.HasOne("NoticeBoard.Models.Post", "Post")
-                        .WithMany("AttachFiles")
-                        .HasForeignKey("PostId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Post");
-                });
-
             modelBuilder.Entity("NoticeBoard.Models.Comment", b =>
                 {
                     b.HasOne("NoticeBoard.Models.Post", "Post")
@@ -155,8 +148,6 @@ namespace NoticeBoard.Migrations
 
             modelBuilder.Entity("NoticeBoard.Models.Post", b =>
                 {
-                    b.Navigation("AttachFiles");
-
                     b.Navigation("Comments");
                 });
 #pragma warning restore 612, 618

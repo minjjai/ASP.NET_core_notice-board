@@ -21,9 +21,11 @@ namespace NoticeBoard.Models
         [StringLength(60, MinimumLength = 10)]
         public string Content { get; set; }
         public string Category { get; set; }
+        //public string? FilePaths { get; set; }
         public int Views { get; set; }
         public List<Comment>? Comments { get; set; }
         //Array를 쓰면 성능은 좋아지지만 LINQ말고 순환문을 써야함
+        public List<AttachFile>? AttachFiles { get; set; }
     }
     
 }

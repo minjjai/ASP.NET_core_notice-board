@@ -4,72 +4,102 @@
 @{
     ViewData["Title"] = "Details";
 }
-<dl class="row">
-    <h2>
-    <dt class="col-sm-10">
-         @Html.DisplayFor(model => model.Title)
-    </dt>
-    </h2>
-<div>
-        <a>
-            <a asp-action="Edit" asp-route-id="@Model?.PostId">Edit</a> |
-            <a asp-action="Delete" asp-route-id="@Model?.PostId">Delete</a> |
-            <a asp-action="Index">Back to List</a>
-        </a>
-    <hr /> 
-    @*가로선*@
+<div class="col-md-8">
     <dl class="row">
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.LastUpdated)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.LastUpdated)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Content)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Content)
-        </dd>
-        <dt class="col-sm-2">
-                @Html.DisplayNameFor(model => model.Category)
-        </dt>
-        <dd class="col-sm-10">
-                @Html.DisplayFor(model => model.Category)
-        </dd>
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.Views)
-        </dt>
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.Views)
-        </dd>
-    </dl>
-</div>
-<hr />
-<div>
-    <form asp-action="Reply" asp-route-id="@Model?.PostId">
-        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-        <div class="form-group">
-            <input type="hidden" asp-for="PostId" />
-            <div>Write a comment</div>
-            <input name="Content" class="form-control" />
-            <span asp-validation-for="Content" class="text-danger"></span>
-        </div>
 
-        <div class="form-group">
-            <input type="submit" value="Reply" class="btn btn-primary" />
+        <h2>
+        <dt class="col-sm-10">
+                @Html.DisplayFor(model => model.Title)
+        </dt>
+        </h2>
+        <div>
+            @*가로선*@
+            <dl class="row">
+                <hr />
+                <div>
+                    <div class="info1" style="float:left; margin-right:80px;">
+                        <dd>
+                            Author:  @Html.DisplayFor(model => model.Nickname)
+                        </dd>
+                    </div>
+                    <div class="info3" style="float:right;  margin-right:20px">
+                        <dd>
+                            Views:  @Html.DisplayFor(model => model.Views)
+                        </dd>
+                    </div>
+                    <div class="info2" style="float:right;  margin-right:20px">
+                        <dd>
+                            @Html.DisplayFor(model => model.LastUpdated)
+                        </dd>
+                    </div>
+                </div>
+                <hr />
+                <dt class="col-sm-2">
+                    @Html.DisplayNameFor(model => model.Content)
+                </dt>
+                <dd class="col-sm-10" style="height:150px;">
+                    @Html.DisplayFor(model => model.Content)
+                </dd>
+                <dt class="col-sm-2">
+                    Attachment
+                </dt>
+                <dd class="col-sm-10">
+                    @if (Model.AttachFiles != null)
+                    {
+                        @foreach (var attachFile in Model.AttachFiles)
+                        {
+
+                            <a href="~/files/@attachFile.FileName" alt="Empty">@attachFile.FileName</a>
+
+                        }
+                    }
+                </dd>
+                <dt class="col-sm-2">
+                    @Html.DisplayNameFor(model => model.Category)
+                </dt>
+                <dd class="col-sm-10">
+                    @Html.DisplayFor(model => model.Category)
+                </dd>
+
+            </dl>
         </div>
-    </form>
- </dl>
+        <hr />
+        <div>
+            <a asp-action="Edit" asp-route-id="@Model?.PostId">Edit</a> |
+            <a asp-action="Delete" asp-route-id="@Model?.PostId">Delete</a>
+            <div class="BTL" style="float:right; margin-right:10px"><a asp-action="Index">Back to List</a></div>
+        </div>
+        <div>
+            <form asp-action="Reply" asp-route-id="@Model?.PostId">
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                <div class="form-group" style="margin-top:40px">
+                    <input type="hidden" asp-for="PostId" />
+                    <div>Write a comment</div>
+                    <input name="Content" class="form-control" />
+                    <span asp-validation-for="Content" class="text-danger"></span>
+                </div>
+
+                <div class="form-group" style="margin-top:20px">
+                    <input type="submit" value="Reply" class="btn btn-primary" />
+                </div>
+                <hr />
+            </form>
+    </dl>
     @foreach (var comment in Model.Comments)
     {
-        <div class="col-sm-10">
-            @comment.Content  |  @comment.LastUpdated
-        </div>
+        <div class="col-sm-12">
+            <div class="coment" style="margin-top:30px;">
+                @comment.Content
+            </div>
+            <div class="date" style="float:right">
+                @comment.LastUpdated             <form asp-action="DeleteC" asp-route-id="@comment.CommentId" class="deleteB" style="margin-left:10px; float:right">
+                    <input type="submit" value="Delete" />
+                </form>
+            </div>
+            <br>
 
-        <form asp-action="DeleteC" asp-route-id="@comment.CommentId">
-            <input type="submit" value="Delete" />
-            @*asp-for="@comment.CommentId"*@
-        </form>
+
+        </div>
     }
+</div>
 </div>
