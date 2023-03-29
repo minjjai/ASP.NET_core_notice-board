@@ -130,6 +130,10 @@
                         success: function (result) {
                             alert("삭제되었습니다.")
                             location.reload();
+                        },
+                        error: function (xhr, textStatus, errorThrown) {
+                            console.log(xhr.responseText);
+                            alert("서버에서 오류가 발생했습니다.");
                         }
                     });
                 }
@@ -138,36 +142,36 @@
             }
         });
     });
-        //$(document).ready(function () {
+            //$(document).ready(function () {
 
-        //    $("#checkBoxAll").click(function () {
-        //        var PostIds = new Array();
-        //        $('.checkBox').each(function () {
-        //            if ($(this).prop('checked')) {
-        //                console.log($(this).val())
-        //                PostIds.push($(this).val());
-        //            }
-        //        });
+            //    $("#checkBoxAll").click(function () {
+            //        var PostIds = new Array();
+            //        $('.checkBox').each(function () {
+            //            if ($(this).prop('checked')) {
+            //                console.log($(this).val())
+            //                PostIds.push($(this).val());
+            //            }
+            //        });
 
-        //        if (PostIds.length === 0) {
-        //            alert("Please select at least one checkbox.");
-        //            return;
-        //        }
+            //        if (PostIds.length === 0) {
+            //            alert("Please select at least one checkbox.");
+            //            return;
+            //        }
 
-        //        $.ajax({
-        //            type: "POST",
-        //            url: "/Posts/DeleteSelectedId",
-        //            data: JSON.stringify(PostIds),
-        //            contentType: "application/json",
-        //            dataType: "json",
-        //            success: function (result) {
-        //                alert(result);
-        //                window.location.reload();
-        //            },
-        //            error: function () {
-        //                alert("An error occurred while processing the request.");
-        //            }
-        //        });
-        //    });
-        //});
+            //        $.ajax({
+            //            type: "POST",
+            //            url: "/Posts/DeleteSelectedId",
+            //            data: JSON.stringify(PostIds),
+            //            contentType: "application/json",
+            //            dataType: "json",
+            //            success: function (result) {
+            //                alert(result);
+            //                window.location.reload();
+            //            },
+            //            error: function () {
+            //                alert("An error occurred while processing the request.");
+            //            }
+            //        });
+            //    });
+            //});
 </script>

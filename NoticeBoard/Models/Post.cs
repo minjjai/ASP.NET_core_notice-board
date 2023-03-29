@@ -18,7 +18,7 @@ namespace NoticeBoard.Models
         [DisplayFormat(DataFormatString = "{0:yyyy-MM-dd}", ApplyFormatInEditMode = true)]
         public DateTime LastUpdated { get; set; }
 
-        [StringLength(60, MinimumLength = 10)]
+        [StringLength(1000, MinimumLength = 10)]
         public string Content { get; set; }
         public string Category { get; set; }
         //public string? FilePaths { get; set; }

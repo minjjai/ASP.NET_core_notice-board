@@ -1,74 +1,10 @@
-﻿@using NoticeBoard.Models;
-@model CategoryViewModel
+﻿@model NoticeBoard.Models.Post
 
 @{
     ViewData["Title"] = "Create";
 }
-
-<div class="col-md-8">
-    <h1>Create</h1>
-
-    <h4>Post</h4>
-    <hr />
-</div>
-@*<form enctype="multipart/form-data" method="post" action="/Posts/Create">*@
-<div class="row">
-    <div class="col-md-8">
-        <div class="col-md-5">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <div class="form-group">
-                <label asp-for="Nickname" class="control-label"></label>
-                <input asp-for="Nickname" class="form-control" id="Nickname" />
-                <span asp-validation-for="Nickname" class="text-danger"></span>
-            </div>
-        </div>
-
-        <div class="col-md-12">
-            <div class="form-group">
-                <label asp-for="Title" class="control-label"></label>
-                <input asp-for="Title" class="form-control" id="Title" />
-                <span asp-validation-for="Title" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="Content" class="control-label"></label>
-                <textarea class="form-control" id="Content" rows="5"></textarea>
-                <span asp-validation-for="Content" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <div>Category</div>
-                <select name="Category" asp-items="Model.Categories" id="Category">
-                    <option value="">-- Select --</option>
-                </select>
-                <span asp-validation-for="Category" class="text-danger"></span>
-            </div>
-        </div>
-        <div id="dropzone">
-            <form class="dropzone" id="myDropzone">
-                <div class="dz-message needsclick">
-                    <span class="text">
-                        <img src="https://www.freeiconspng.com/uploads/------------------------------iconpngm--22.png" alt="Camera" />
-                        Drop files here or click to upload.
-                    </span>
-                    <span class="plus">+</span>
-                </div>
-            </form>
-        </div>
-        <div class="form-group">
-            <button type="submit" value="Create" class="btn btn-primary" id="submit">Create</button>
-        </div>
-        <div>
-
-            <a asp-action="Index" style="float:right; margin-top:10px">Back to List</a></p>
-
-        </div>
-    </div>
-</div>
-
-
-
-
-@*</form>*@
-
+@*<script src="https://cdn.ckeditor.com/ckeditor5/12.0.0/classic/ckeditor.js"></script>*@
+<script src="https://cdn.ckeditor.com/ckeditor5/36.0.1/classic/ckeditor.js"></script>
 <style>
     body {
         background: #EEE;
@@ -129,8 +65,88 @@
             color: #AAA;
             line-height: 110px;
         }
+
+    .ck.ck-content .image {
+        position: relative;
+    }
+
+        .ck.ck-content .image img {
+            width: auto;
+            height: 300px;
+        }
+
+    /*        .ck.ck-content .image::before {
+                content: '';
+                padding-top: 100%
+            }*/
+
+
+    .ck-editor__editable {
+        min-height: 300px;
+    }
 </style>
 
+<div class="col-md-8">
+    <h1>Create</h1>
+
+    <h4>Post</h4>
+    <hr />
+</div>
+@*<form enctype="multipart/form-data" method="post" action="/Posts/Create">*@
+<div class="row">
+    <div class="col-md-8">
+        <div class="col-md-5">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="Nickname" class="control-label"></label>
+                <input asp-for="Nickname" class="form-control" id="Nickname" />
+                <span asp-validation-for="Nickname" class="text-danger"></span>
+            </div>
+        </div>
+
+        <div class="col-md-12">
+            <div class="form-group">
+                <label asp-for="Title" class="control-label"></label>
+                <input asp-for="Title" class="form-control" id="Title" />
+                <span asp-validation-for="Title" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <div>Category</div>
+                <select name="Category" asp-items="Model.Categories" id="Category">
+                    <option value="">-- Select --</option>
+                </select>
+                <span asp-validation-for="Category" class="text-danger"></span>
+            </div>
+            @*<form method="post" enctype="multipart/form-data">*@
+            <div class="form-group">
+                <label asp-for="Content" class="control-label"></label>
+                <textarea class="editor" id="txtarea" rows="10"></textarea>
+                <span asp-validation-for="Content" class="text-danger"></span>
+            </div>
+            @*</form>*@
+
+        </div>
+        <div id="dropzone">
+            <form class="dropzone" id="myDropzone">
+                <div class="dz-message needsclick">
+                    <span class="text">
+                        <img src="https://www.freeiconspng.com/uploads/------------------------------iconpngm--22.png" alt="Camera" />
+                        Drop files here or click to upload.
+                    </span>
+                    <span class="plus">+</span>
+                </div>
+            </form>
+        </div>
+        <div class="form-group">
+            <button type="submit" value="Create" class="btn btn-primary" id="submit">Create</button>
+        </div>
+        <div>
+
+            <a asp-action="Index" style="float:right; margin-top:10px">Back to List</a></p>
+
+        </div>
+    </div>
+</div>
 
 
 @{
@@ -138,10 +154,60 @@
 }
 @section Scripts {
 
-    @*    <script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
+    @*        <script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/dropzone@5/dist/min/dropzone.min.css" type="text/css" />*@
 
     <script>
+        ClassicEditor
+            .create(document.querySelector('#txtarea'))
+            .then(editor => {
+                editor.model.document.on('change', () => {
+                    var htmlContent = editor.getData();
+                    document.getElementById("txtarea").value = htmlContent;
+                });
+                editor.plugins.get('FileRepository').createUploadAdapter = (loader) => {
+                    console.log(loader);
+                    return new UploadAdapter(loader, 'https://localhost:7004/posts/Upload');
+                };
+            })
+            .catch(error => {
+                console.error(error);
+            });
+
+        class UploadAdapter {
+            constructor(loader, url) {
+                this.loader = loader;
+                this.url = url;
+            }
+            upload() {
+                return this.loader.file
+                    .then(file => {
+                        console.log(file, "file")
+                        console.log(this.url)
+                        var formData = new FormData();
+                        formData.append("file", file)
+                        return fetch(this.url, {
+                            method: 'POST',
+                            body: formData,
+                            contentType: false
+                        });
+                    })
+                    .then(response => {
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log(data, "data");
+                        const url = new URL(data.url, window.location.origin); // URL 생성
+                        const absoluteUrl = url.href; // 절대 경로 추출
+                        console.log(absoluteUrl, "absoluteUrl");
+                        const defaultSize = { width: '300', height: '300' };
+
+                        return {
+                            default: absoluteUrl
+                        };
+                    });
+            }
+        }
 
         Dropzone.options.myDropzone = {
 
@@ -172,20 +238,18 @@
                 // 서버에 제출 submit 버튼 이벤트 등록
                 document.querySelector('#submit').addEventListener('click', function (e) {
                     console.log('업로드')
+
                     e.preventDefault();
                     //e.stopPropagation();
+
                     console.log(myDropzone.files)
                     if (myDropzone.files.length == 0) {
 
                         var formData = new FormData();
                         formData.append("Nickname", document.getElementById("Nickname").value);
                         formData.append("Title", document.getElementById("Title").value);
-                        formData.append("Content", document.getElementById("Content").value);
+                        formData.append("Content", document.getElementById("txtarea").value);
                         formData.append("Category", document.getElementById("Category").value);
-                        //context.HttpContext.Response.Cookies.Append(
-                        //    "RequestVerificationToken",
-                        //    tokens.RequestToken,
-                        //    new CookieOptions() { HttpOnly = false });
 
                         fetch('/posts/Create', {
                             body: formData,
@@ -209,9 +273,11 @@
 
                     formData.append("Nickname", document.getElementById("Nickname").value);
                     formData.append("Title", document.getElementById("Title").value);
-                    formData.append("Content", document.getElementById("Content").value);
+                    formData.append("Content", document.getElementById("txtarea").value);
                     formData.append("Category", document.getElementById("Category").value);
-
+                    for (var i = 0; i < myDropzone.files.length; i++) {
+                        formData.append("files", myDropzone.files[i]);
+                    }
                 });
 
                 // 서버로 파일이 성공적으로 전송되면 실행

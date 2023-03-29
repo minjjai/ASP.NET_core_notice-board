@@ -91,8 +91,8 @@ namespace NoticeBoard.Migrations
 
                     b.Property<string>("Content")
                         .IsRequired()
-                        .HasMaxLength(60)
-                        .HasColumnType("nvarchar(60)");
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
 
                     b.Property<DateTime>("LastUpdated")
                         .HasColumnType("datetime2");
