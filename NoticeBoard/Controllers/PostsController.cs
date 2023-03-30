@@ -15,6 +15,7 @@ using System.Net.Mail;
 using Azure.Core;
 using Microsoft.CodeAnalysis.Elfie.Serialization;
 using NoticeBoard.Migrations;
+using System.Text.RegularExpressions;
 
 namespace NoticeBoard.Controllers
 {
@@ -76,17 +77,23 @@ namespace NoticeBoard.Controllers
 
             var totalPosts = await posts.CountAsync();
             var totalPages = (int)Math.Ceiling((decimal)totalPosts / pageSize);
+            var categories = await _context.FixedCategories.Select(c => new SelectListItem
+            {
+                Value = c.Categories,
+                Text = c.Categories
+            }).ToListAsync();
 
             var viewModel = new PostsViewModel
             {
                 Posts = await posts.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync(),
+                Categories = categories,
                 TotalPages = totalPages,
                 CurrentPage = pageNumber,
                 PageSize = pageSize,
                 PostCategory = postCategory,
                 SearchString = searchString,
-                SortOrder = sortOrder
-            };
+                SortOrder = sortOrder,
+        };
 
             return View(viewModel);
         }
@@ -153,7 +160,8 @@ namespace NoticeBoard.Controllers
                 for (var i = 0; i < files.Count; i++)
                 {
                     var file = files[i];
-                    string filePath = Path.Combine(uploadPath, file.FileName).Replace("\\", "/");
+                    var fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
+                    string filePath = Path.Combine(uploadPath, fileName).Replace("\\", "/");
                     using (FileStream fs = System.IO.File.Create(filePath))
                     {
                         await file.CopyToAsync(fs); //업로드된 파일 타겟의 내용을 비동기적으로 복사
@@ -177,22 +185,34 @@ namespace NoticeBoard.Controllers
 
         }
 
+        [HttpPost]
+        public async Task<IActionResult> Upload(IFormFile file)
+        {
+            var fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
+            var uploadPath = Path.Combine(hostEnv.WebRootPath, "Files");
+            var filePath = Path.Combine(uploadPath, fileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            return Ok(new { url = $"/files/{fileName}" });
+        }
+
         // GET: Posts/Edit/5
         public async Task<IActionResult> Edit(int id)
         {
             var post = await _context.Posts.FindAsync(id);
 
-            if ( await _context.AttachFiles.FirstOrDefaultAsync(p => p.PostId == id) != null)
+            if (await _context.AttachFiles.FirstOrDefaultAsync(p => p.PostId == id) != null)
             {
-                var file = await _context.AttachFiles
-                    .Where(x => x.PostId == id)
-                .FirstOrDefaultAsync();
-
                 var categories = await _context.FixedCategories.ToListAsync();
+                //var attachFiles = await _context.AttachFiles.ToListAsync();
                 var viewModel = new CategoryViewModel
                 {
-                    FileId = file.FileId,
                     PostId = post.PostId,
+                    Category = post.Category,
                     Nickname = post.Nickname,
                     Title = post.Title,
                     Content = post.Content,
@@ -201,7 +221,13 @@ namespace NoticeBoard.Controllers
                         Text = c.Categories,
                         Value = c.Categories,
                         Selected = (post.Category == c.Categories)
-                    })
+                    }),
+                    //FileNames = attachFiles.Select(c => new SelectListItem
+                    //{
+                    //    Text = c.FileName,
+                    //    Value = c.FileName,
+                    //    Selected = (post.PostId == c.PostId)
+                    //}),
                 };
 
                 return View(viewModel);
@@ -347,26 +373,26 @@ namespace NoticeBoard.Controllers
         }
 
         // GET: Posts/Delete/5
-        public async Task<IActionResult> Delete(int? id)
-        {
-            if (id == null || _context.Posts == null)
-            {
-                return NotFound();
-            }
+        //public async Task<IActionResult> Delete(int? id)
+        //{
+        //    if (id == null || _context.Posts == null)
+        //    {
+        //        return NotFound();
+        //    }
 
-            var post = await _context.Posts
-                .FirstOrDefaultAsync(m => m.PostId == id);
-            if (post == null)
-            {
-                return NotFound();
-            }
+        //    var post = await _context.Posts
+        //        .FirstOrDefaultAsync(m => m.PostId == id);
+        //    if (post == null)
+        //    {
+        //        return NotFound();
+        //    }
 
-            return View(post);
-        }
+        //    return View(post);
+        //}
 
         // POST: Posts/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
+        [HttpDelete]
+        //[ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             if (_context.Posts == null)
@@ -397,7 +423,23 @@ namespace NoticeBoard.Controllers
 
             var comments = _context.Comments.Where(c => c.PostId == id);
             _context.Comments.RemoveRange(comments);
+
             var post = await _context.Posts.FindAsync(id);
+
+            var content = post.Content;
+            var regex = new Regex("<img[^>]+src\\s*=\\s*['\"]([^'\"]+)['\"][^>]*>");
+            var match = regex.Match(content);
+            var rootPath = Path.Combine(hostEnv.WebRootPath, "Files");
+            //foreach (Match match in matches) //져러장 업로드는 돈내야 한단다
+            //{
+            var imageUrl = match.Groups[1].Value;
+            var imageName = Path.GetFileName(imageUrl);
+            var imagePath = Path.Combine(rootPath, imageName);
+            if (System.IO.File.Exists(imagePath))
+            {
+                System.IO.File.Delete(imagePath);
+            }
+            //}
 
             if (post != null)
             {
@@ -405,7 +447,7 @@ namespace NoticeBoard.Controllers
             }
 
             await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+            return Ok();
         }
 
         [HttpDelete]
@@ -423,7 +465,47 @@ namespace NoticeBoard.Controllers
             for (int i = 0; i < splitId.Length; i++)
             {
                 var intId = int.Parse(splitId[i]);
+                var filePaths = await _context.AttachFiles
+                                .Where(p => p.PostId == intId)
+                                .Select(p => p.FilePath)
+                                .ToListAsync();
+
+                foreach (var filePath in filePaths)
+                {
+                    if (System.IO.File.Exists(filePath))
+                    {
+                        System.IO.File.Delete(filePath);
+                    }
+                }
+
+                var attachfiles = await _context.AttachFiles
+                    .Where(p => p.PostId == intId)
+                    .ToListAsync();
+
+                foreach (var attachfile in attachfiles)
+                {
+                    _context.AttachFiles.Remove(attachfile);
+                }
+
+                var comments = _context.Comments.Where(c => c.PostId == intId);
+                _context.Comments.RemoveRange(comments);
+
                 var post = await _context.Posts.FindAsync(intId);
+
+                var content = post.Content;
+                var regex = new Regex("<img[^>]+src\\s*=\\s*['\"]([^'\"]+)['\"][^>]*>");
+                var match = regex.Match(content);
+                var rootPath = Path.Combine(hostEnv.WebRootPath, "Files");
+                //foreach (Match match in matches)
+                //{
+                var imageUrl = match.Groups[1].Value;
+                var imageName = Path.GetFileName(imageUrl);
+                var imagePath = Path.Combine(rootPath, imageName);
+                if (System.IO.File.Exists(imagePath))
+                {
+                    System.IO.File.Delete(imagePath);
+                }
+                //}
                 if (post != null)
                 {
                     _context.Posts.Remove(post);

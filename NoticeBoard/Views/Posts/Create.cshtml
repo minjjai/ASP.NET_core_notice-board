@@ -1,9 +1,7 @@
-﻿@model NoticeBoard.Models.Post
-
+﻿@model NoticeBoard.Models.CategoryViewModel
 @{
     ViewData["Title"] = "Create";
 }
-@*<script src="https://cdn.ckeditor.com/ckeditor5/12.0.0/classic/ckeditor.js"></script>*@
 <script src="https://cdn.ckeditor.com/ckeditor5/36.0.1/classic/ckeditor.js"></script>
 <style>
     body {
@@ -115,7 +113,7 @@
                 <select name="Category" asp-items="Model.Categories" id="Category">
                     <option value="">-- Select --</option>
                 </select>
-                <span asp-validation-for="Category" class="text-danger"></span>
+                <span asp-validation-for="Categories" class="text-danger"></span>
             </div>
             @*<form method="post" enctype="multipart/form-data">*@
             <div class="form-group">
@@ -178,12 +176,12 @@
             constructor(loader, url) {
                 this.loader = loader;
                 this.url = url;
+                console.log(this.url, "url")
             }
             upload() {
                 return this.loader.file
                     .then(file => {
                         console.log(file, "file")
-                        console.log(this.url)
                         var formData = new FormData();
                         formData.append("file", file)
                         return fetch(this.url, {
@@ -200,7 +198,6 @@
                         const url = new URL(data.url, window.location.origin); // URL 생성
                         const absoluteUrl = url.href; // 절대 경로 추출
                         console.log(absoluteUrl, "absoluteUrl");
-                        const defaultSize = { width: '300', height: '300' };
 
                         return {
                             default: absoluteUrl
