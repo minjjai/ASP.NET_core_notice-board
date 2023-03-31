@@ -83,20 +83,15 @@
         min-height: 100px;
     }
 
-    .col-md-8 {
+    .col-md-6 {
         position: relative;
         float: left;
-        left: 17%;
+        left: 25%;
     }
-/*    .row{
-        position: relative;
-        float: left;
-        left: 17%;
-    }*/
 </style>
 
 
-<div class="col-md-8">
+<div class="col-md-6">
     <h1>Create</h1>
     <hr />
 
@@ -145,10 +140,10 @@
                 </div>
             </form>
         </div>
-        <div class="form-group">
+            <div class="form-group" style="margin-bottom:10px;">
             <input type="submit" value="Create" id="submit" style="color:#8FBC8F; margin-top:12px; float:right;" />
         </div>
-        <div>
+            <div style="margin-bottom:10px;">
 
             <a asp-action="Index" style="float:right; margin-top:10px; margin-right: 10px; color:#8FBC8F;">Back to List</a></p>
 
@@ -167,7 +162,12 @@
 
     <script>
         ClassicEditor
-            .create(document.querySelector('#txtarea'))
+            .create(document.querySelector('#txtarea'),{
+                image: {
+                    // 강제로 figure 태그를 생성
+                    toolbar: ['imageTextAlternative', '|', /*'imageStyle:alignLeft', 'imageStyle:full', 'imageStyle:alignRight', 'imageStyle:alignCenter',*/ 'linkImage']
+                }
+            })
             .then(editor => {
                 editor.model.document.on('change', () => {
                     var htmlContent = editor.getData();

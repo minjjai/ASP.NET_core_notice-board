@@ -155,9 +155,9 @@ namespace NoticeBoard.Controllers
 
             if (Request.Form.Files.Count > 0)
             {
-                var uploadPath = Path.Combine(hostEnv.WebRootPath, "Files");
                 var files = Request.Form.Files;
-                for (var i = 0; i < files.Count; i++)
+                var uploadPath = Path.Combine(hostEnv.WebRootPath, "Files");
+                for (var i = 0; i < Files.Count; i++)
                 {
                     var file = files[i];
                     var fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
@@ -287,6 +287,30 @@ namespace NoticeBoard.Controllers
             {
                 try
                 {
+                    //editor의 사진이 변경된경우 
+                    var rootPath = Path.Combine(hostEnv.WebRootPath, "Files");
+
+                    var beforePost = await _context.Posts.FindAsync(id);
+                    var beforeContent = beforePost.Content;
+                    var regexB = new Regex("<img[^>]+src\\s*=\\s*['\"]([^'\"]+)['\"][^>]*>");
+                    var matchB = regexB.Match(beforeContent);
+                    var imageUrlB = matchB.Groups[1].Value;
+                    var imageNameB = Path.GetFileName(imageUrlB);
+                    var imagePathB = Path.Combine(rootPath, imageNameB);
+
+                    var content = post.Content;
+                    var regex = new Regex("<img[^>]+src\\s*=\\s*['\"]([^'\"]+)['\"][^>]*>");
+                    var match = regex.Match(content);
+                    var imageUrl = match.Groups[1].Value;
+                    var imageName = Path.GetFileName(imageUrl);
+
+                    if (imageNameB != imageName)
+                    {
+                        if (System.IO.File.Exists(imagePathB))
+                        {
+                            System.IO.File.Delete(imagePathB);
+                        }
+                    }
                     var Post = await _context.Posts.FirstOrDefaultAsync(p => p.PostId == id);
                     DateTime datetime = DateTime.Now;
                     Post.Nickname = post.Nickname;

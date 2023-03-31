@@ -67,23 +67,24 @@
     <tbody>
         @foreach (var item in Model.Posts!)
         {
-            <tr onclick="goToDetail(@item.PostId)">
+
+            <tr >
                 <td class="table-success">
                     <input type="checkbox" class="checkBox" value="@item.PostId" Id="CheckBoxId" />
                 </td>
-                <td class="table-success">
+                <td class="table-success" onclick="goToDetail(@item.PostId)">
                    @Html.DisplayFor(modelItem => item.Title)
                 </td>
-                <td class="table-success">
+                <td class="table-success" onclick="goToDetail(@item.PostId)">
                     @Html.DisplayFor(modelItem => item.Nickname)
                 </td>
-                <td class="table-success">
+                <td class="table-success" onclick="goToDetail(@item.PostId)">
                     @Html.DisplayFor(modelItem => item.LastUpdated)
                 </td>
-                <td class="table-success">
+                <td class="table-success" onclick="goToDetail(@item.PostId)">
                     @Html.DisplayFor(modelItem => item.Category)
                 </td>
-                <td class="table-success">
+                <td class="table-success" onclick="goToDetail(@item.PostId)">
                     @Html.DisplayFor(modelItem => item.Views)
                 </td>
             </tr>
