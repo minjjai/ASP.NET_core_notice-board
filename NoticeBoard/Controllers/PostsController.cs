@@ -145,7 +145,7 @@ namespace NoticeBoard.Controllers
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        //[ValidateAntiForgeryToken]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([FromForm] Post post, [FromForm] ICollection<IFormFile>? Files = null)
         {
             DateTime datetime = DateTime.Now;
@@ -275,7 +275,7 @@ namespace NoticeBoard.Controllers
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        //[ValidateAntiForgeryToken]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [FromForm] Post post, [FromForm] string? FileId = null, ICollection<IFormFile>? Files = null)
         {
             if (id != post.PostId)
