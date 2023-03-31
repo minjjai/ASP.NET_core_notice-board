@@ -7,13 +7,15 @@
 <script>
 </script>
 <style>
-    .figure {
-        height: auto;
-        width: auto;
+
+    body {
+        /*background: #8FBC8F;*/
+        /*background: #b3e6cc;*/
+        background: #EEE;
     }
 
     .image img {
-        height: 300px;
+        height: 400px;
         width: auto;
     }
 
@@ -22,20 +24,42 @@
         text-decoration: underline;
     }
 
+    .category {
+        height: 30px;
+        width: auto;
+        border-radius: 15px;
+        text-align: center;
+        background: #b3e6cc; 
+        border-radius: 15px;
+    }
+
+    .col-md-8 {
+        position: relative;
+/*        display: block;
+        display: inline-block;*/
+        float: left;
+        left:17%;
+    }
+
+    .image1 img {
+        height: 30px;
+        width: auto;
+    }
 
 </style>
 <div class="col-md-8">
-    <dl class="row">
+    <dlv class="row">
 
+        <dd class="category">
+            @Html.DisplayFor(model => model.Category)
+        </dd>
         <h2>
-        <dt class="col-sm-10">
+        <dt class="col-sm-20">
                 @Html.DisplayFor(model => model.Title)
         </dt>
         </h2>
         <div>
-            @*가로선*@
-            <dl class="row">
-                <hr />
+            <dl class="row" style="margin-top:20px;">
                 <div>
                     <div class="info1" style="float:left; margin-right:80px;">
                         <dd>
@@ -54,19 +78,11 @@
                     </div>
                 </div>
                 <hr />
-                <dt class="col-sm-2">
-                    @Html.DisplayNameFor(model => model.Content)
-                </dt>
-                @*                <dd class="col-sm-10">
-                @Html.DisplayFor(model => model.Content)
-                </dd>*@
                 <dd class="col-sm-10" style="min-height:150px;">
                     @Html.Raw(Model.Content)
                     @*@Html.Raw(System.Net.WebUtility.UrlDecode(Model.Content))*@
                 </dd>
-                <dt class="col-sm-2">
-                    Attachment
-                </dt>
+
                 <dd class="col-sm-10">
                     @if (Model.AttachFiles != null)
                     {
@@ -78,19 +94,15 @@
                         }
                     }
                 </dd>
-                <dt class="col-sm-2">
-                    @Html.DisplayNameFor(model => model.Category)
-                </dt>
-                <dd class="col-sm-10">
-                    @Html.DisplayFor(model => model.Category)
-                </dd>
 
         </div>
         <hr />
-        <div>
-            <a asp-action="Edit" asp-route-id="@Model?.PostId">Edit</a> |
-            <a id="delete" onclick="deletePost(@Model?.PostId)">Delete</a>
-            <div class="BTL" style="float:right; margin-right:10px"><a asp-action="Index">Back to List</a></div>
+        <div style="margin-bottom:20px">
+            <a asp-action="Edit" asp-route-id="@Model?.PostId" style="color:#8FBC8F;">Edit</a> |
+            <a id="delete" onclick="deletePost(@Model?.PostId)" style="color:#8FBC8F;">Delete</a>
+            <div class="BTL" style="float:right; margin-right:10px">
+                <a asp-action="Index" style="color:#8FBC8F;">Back to List</a>
+            </div>
         </div>
         <div>
             <form asp-action="Reply" asp-route-id="@Model?.PostId">
@@ -102,19 +114,21 @@
                     <span asp-validation-for="Content" class="text-danger"></span>
                 </div>
                 <div class="form-group">
-                    <input type="submit" value="Reply" class="btn btn-primary" />
+                    <input type="submit" value="Reply" style="color:#8FBC8F; margin-top:10px; margin-bottom:20px" />
                 </div>
             </form>
-    </dl>
+    </dlv>
     @foreach (var comment in Model.Comments)
     {
-        <div class="col-sm-10">
-            @comment.Content  |  @comment.LastUpdated
+        <div class="col-sm-12">
+            <figure class="image1"><img src="~/files/ea238c3dc6de34829b68e693ace70be7.png" />  @comment.LastUpdated</figure>
+            <form asp-action="DeleteC" asp-route-id="@comment.CommentId">
+                <input type="submit" value="Delete" style="float:right" />
+            </form>
+            @comment.Content  @*|  @comment.LastUpdated*@
+            <hr />
         </div>
-        <form asp-action="DeleteC" asp-route-id="@comment.CommentId">
-            <input type="submit" value="Delete" />
-            @*asp-for="@comment.CommentId"*@
-        </form>
+
     }
 </div>
 <script>
