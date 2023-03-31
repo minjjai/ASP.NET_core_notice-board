@@ -372,25 +372,7 @@ namespace NoticeBoard.Controllers
             return RedirectToAction("Details", new { id = id });
         }
 
-        // GET: Posts/Delete/5
-        //public async Task<IActionResult> Delete(int? id)
-        //{
-        //    if (id == null || _context.Posts == null)
-        //    {
-        //        return NotFound();
-        //    }
-
-        //    var post = await _context.Posts
-        //        .FirstOrDefaultAsync(m => m.PostId == id);
-        //    if (post == null)
-        //    {
-        //        return NotFound();
-        //    }
-
-        //    return View(post);
-        //}
-
-        // POST: Posts/Delete/5
+        
         [HttpDelete]
         //[ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)

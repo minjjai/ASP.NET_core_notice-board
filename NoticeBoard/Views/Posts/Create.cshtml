@@ -74,25 +74,35 @@
         }
 
     /*        .ck.ck-content .image::before {
-                content: '';
-                padding-top: 100%
-            }*/
+                        content: '';
+                        padding-top: 100%
+                    }*/
 
 
     .ck-editor__editable {
-        min-height: 300px;
+        min-height: 100px;
     }
+
+    .col-md-8 {
+        position: relative;
+        float: left;
+        left: 17%;
+    }
+/*    .row{
+        position: relative;
+        float: left;
+        left: 17%;
+    }*/
 </style>
+
 
 <div class="col-md-8">
     <h1>Create</h1>
-
-    <h4>Post</h4>
     <hr />
-</div>
+
 @*<form enctype="multipart/form-data" method="post" action="/Posts/Create">*@
 <div class="row">
-    <div class="col-md-8">
+    <div class="col-md-12">
         <div class="col-md-5">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <div class="form-group">
@@ -118,7 +128,7 @@
             @*<form method="post" enctype="multipart/form-data">*@
             <div class="form-group">
                 <label asp-for="Content" class="control-label"></label>
-                <textarea class="editor" id="txtarea" rows="10"></textarea>
+                <textarea class="editor" id="txtarea"></textarea>
                 <span asp-validation-for="Content" class="text-danger"></span>
             </div>
             @*</form>*@
@@ -136,16 +146,16 @@
             </form>
         </div>
         <div class="form-group">
-            <button type="submit" value="Create" class="btn btn-primary" id="submit">Create</button>
+            <input type="submit" value="Create" id="submit" style="color:#8FBC8F; margin-top:12px; float:right;" />
         </div>
         <div>
 
-            <a asp-action="Index" style="float:right; margin-top:10px">Back to List</a></p>
+            <a asp-action="Index" style="float:right; margin-top:10px; margin-right: 10px; color:#8FBC8F;">Back to List</a></p>
 
         </div>
     </div>
 </div>
-
+</div>
 
 @{
     await Html.RenderPartialAsync("_ValidationScriptsPartial");
