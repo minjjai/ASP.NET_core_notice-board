@@ -8,7 +8,7 @@ namespace NoticeBoard.Models
         public int CommentId { get; set; }
         //public string? Nickname { get; set; }
 
-        [StringLength(40, MinimumLength = 3)]
+        [StringLength(100, MinimumLength = 2)]
         public string? Content { get; set; }
         public DateTime LastUpdated { get; set; }
         public int? PostId { get; set; }
