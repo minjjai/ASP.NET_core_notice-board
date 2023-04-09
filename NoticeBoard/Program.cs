@@ -1,43 +1,43 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using NoticeBoard.Data;
-using NoticeBoard.Models;
-var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddDbContext<NoticeBoardContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("NoticeBoardContext") ?? throw new InvalidOperationException("Connection string 'NoticeBoardContext' not found.")));
-
-// Add services to the container.
-builder.Services.AddControllersWithViews();
-
-var app = builder.Build();
-//IConfiguration configuration = app.Configuration;
-//IWebHostEnvironment environment = app.Environment;
-
-using (var scope = app.Services.CreateScope())
-{
-    var services = scope.ServiceProvider;
-
-    SeedData.Initialize(services);
-}
-
-// Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment())
-{
-    app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-    app.UseHsts();
-}
+﻿//using Microsoft.EntityFrameworkCore;
+//using Microsoft.Extensions.DependencyInjection;
+//using NoticeBoard.Core.Model;
+//using NoticeBoard.Models;
+//using NoticeBoard.Core.Interfaces;
+//using NoticeBoard.Infrastructure;
 
 
-app.UseHttpsRedirection();
-app.UseStaticFiles();
+//// Add services to the container.
+//builder.Services.AddControllersWithViews();
 
-app.UseRouting();
+//var app = builder.Build();
+////IConfiguration configuration = app.Configuration;
+////IWebHostEnvironment environment = app.Environment;
 
-app.UseAuthorization();
+//using (var scope = app.Services.CreateScope())
+//{
+//    var services = scope.ServiceProvider;
 
-app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+//    SeedData.Initialize(services);
+//}
 
-app.Run();
+//// Configure the HTTP request pipeline.
+//if (!app.Environment.IsDevelopment())
+//{
+//    app.UseExceptionHandler("/Home/Error");
+//    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+//    app.UseHsts();
+//}
+
+
+//app.UseHttpsRedirection();
+//app.UseStaticFiles();
+
+//app.UseRouting();
+
+//app.UseAuthorization();
+
+//app.MapControllerRoute(
+//    name: "default",
+//    pattern: "{controller=Home}/{action=Index}/{id?}");
+
+//app.Run();
