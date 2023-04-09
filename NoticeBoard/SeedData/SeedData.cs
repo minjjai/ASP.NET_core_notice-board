@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using noticeboard.models;
-using NoticeBoard.Data;
+using NoticeBoard.Core.Model;
 using System;
 using System.Linq;
 
