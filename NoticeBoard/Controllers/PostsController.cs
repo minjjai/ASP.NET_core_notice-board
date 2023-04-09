@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
+using NoticeBoard.Data;
 using NoticeBoard.Models;
 using Microsoft.AspNetCore.Http;
 using System.IO;
@@ -15,22 +16,18 @@ using Azure.Core;
 using Microsoft.CodeAnalysis.Elfie.Serialization;
 using NoticeBoard.Migrations;
 using System.Text.RegularExpressions;
-using NoticeBoard.Core.Interfaces;
-using NoticeBoard.Infrastructure;
 
 namespace NoticeBoard.Controllers
 {
     //종속성 주입
     public class PostsController : Controller
     {
-        private readonly AppDbContext _context;
-        private readonly INoticeBoardRepository _repository;
+        private readonly NoticeBoardContext _context;
         private IWebHostEnvironment hostEnv;
 
-        public PostsController(AppDbContext context, INoticeBoardRepository repository, IWebHostEnvironment env)
+        public PostsController(NoticeBoardContext context, IWebHostEnvironment env)
         {
             _context = context;
-            _repository = repository;
             hostEnv = env;
         }
 
@@ -80,7 +77,11 @@ namespace NoticeBoard.Controllers
 
             var totalPosts = await posts.CountAsync();
             var totalPages = (int)Math.Ceiling((decimal)totalPosts / pageSize);
-            var categories = await _repository.SelectAsync();
+            var categories = await _context.FixedCategories.Select(c => new SelectListItem
+            {
+                Value = c.Categories,
+                Text = c.Categories
+            }).ToListAsync();
 
             var viewModel = new PostsViewModel
             {
@@ -92,7 +93,7 @@ namespace NoticeBoard.Controllers
                 PostCategory = postCategory,
                 SearchString = searchString,
                 SortOrder = sortOrder,
-            };
+        };
 
             return View(viewModel);
         }
@@ -105,11 +106,14 @@ namespace NoticeBoard.Controllers
                 return NotFound();
             }
 
-            var post = await _repository.FindAsync(id);
+            var post = await _context.Posts
+                .Include(x => x.Comments)
+                .Include(x => x.AttachFiles)
+                .FirstOrDefaultAsync(m => m.PostId == id);
 
             post.Views++;
             //_context.Update(post);
-            await _repository.SaveChangesAsync();
+            await _context.SaveChangesAsync();
 
             if (post == null)
             {
@@ -123,7 +127,11 @@ namespace NoticeBoard.Controllers
         // GET: Posts/Create
         public async Task<IActionResult> Create()
         {
-            var categories = await _repository.SelectAsync();
+            var categories = await _context.FixedCategories.Select(c => new SelectListItem
+            {
+                Value = c.Categories,
+                Text = c.Categories
+            }).ToListAsync();
 
             var model = new CategoryViewModel
             {
@@ -138,14 +146,14 @@ namespace NoticeBoard.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([FromForm] Post post, ICollection<IFormFile>? Files = null)
+        public async Task<IActionResult> Create([FromForm] Post post, [FromForm] ICollection<IFormFile>? Files = null)
         {
             DateTime datetime = DateTime.Now;
             post.LastUpdated = datetime;
-            _repository.AddAsync(post);
-            await _repository.SaveChangesAsync();
+            _context.Add(post);
+            await _context.SaveChangesAsync();
 
-            if (Files?.Count > 0)
+            if (Request.Form.Files.Count > 0)
             {
                 var files = Request.Form.Files;
                 var uploadPath = Path.Combine(hostEnv.WebRootPath, "Files");
@@ -169,11 +177,10 @@ namespace NoticeBoard.Controllers
                         FileData = System.IO.File.ReadAllBytes(filePath),
                         PostId = post.PostId
                     };
-                    _repository.Attach(attachFile); //이미 데이터베이스에 있는 엔터티를 수정하려는 경우 사용
-                    await _repository.SaveChangesAsync();
+                    _context.Attach(attachFile); //이미 데이터베이스에 있는 엔터티를 수정하려는 경우 사용
+                    await _context.SaveChangesAsync();
                 }
             }
-
             return RedirectToAction(nameof(Index));
 
         }
@@ -196,11 +203,11 @@ namespace NoticeBoard.Controllers
         // GET: Posts/Edit/5
         public async Task<IActionResult> Edit(int id)
         {
-            var post = await _repository.FindAsync(id);
+            var post = await _context.Posts.FindAsync(id);
 
-            if (await _repository.FirstOrDefaultAsync(id) != null)
+            if (await _context.AttachFiles.FirstOrDefaultAsync(p => p.PostId == id) != null)
             {
-                var categories = await _repository.ListAsync();
+                var categories = await _context.FixedCategories.ToListAsync();
                 //var attachFiles = await _context.AttachFiles.ToListAsync();
                 var viewModel = new CategoryViewModel
                 {
@@ -228,7 +235,7 @@ namespace NoticeBoard.Controllers
             else
             {
 
-                var categories = await _repository.ListAsync();
+                var categories = await _context.FixedCategories.ToListAsync();
                 var viewModel = new CategoryViewModel
                 {
                     PostId = post.PostId,
@@ -251,9 +258,9 @@ namespace NoticeBoard.Controllers
 
 
         [HttpGet]
-        public async Task<IActionResult> GetFiles(int id)
+        public IActionResult GetFiles(int id)
         {
-            var files = await _repository.FindList(id); //변수가 Task<List<AttachFile>> 객체 비동기적 호출
+            var files = _context.AttachFiles.Where(p => p.PostId == id).ToList();
             var result = files.Select(p => new
             {
                 FileId = p.FileId,
@@ -283,7 +290,7 @@ namespace NoticeBoard.Controllers
                     //editor의 사진이 변경된경우 
                     var rootPath = Path.Combine(hostEnv.WebRootPath, "Files");
 
-                    var beforePost = await _repository.FindAsync(id);
+                    var beforePost = await _context.Posts.FindAsync(id);
                     var beforeContent = beforePost.Content;
                     var regexB = new Regex("<img[^>]+src\\s*=\\s*['\"]([^'\"]+)['\"][^>]*>");
                     var matchB = regexB.Match(beforeContent);
@@ -304,15 +311,15 @@ namespace NoticeBoard.Controllers
                             System.IO.File.Delete(imagePathB);
                         }
                     }
-                    var Post = await _repository.Posts.FirstOrDefaultAsync(p => p.PostId == id);
+                    var Post = await _context.Posts.FirstOrDefaultAsync(p => p.PostId == id);
                     DateTime datetime = DateTime.Now;
                     Post.Nickname = post.Nickname;
                     Post.Title = post.Title;
                     Post.Content = post.Content;
                     Post.LastUpdated = datetime;
                     Post.Category = post.Category;
-                    _repository.Update(Post);
-                    await _repository.SaveChangesAsync();
+                    _context.Update(Post);
+                    await _context.SaveChangesAsync();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -350,8 +357,8 @@ namespace NoticeBoard.Controllers
                             PostId = post.PostId
                         };
 
-                        _repository.Attach(attachFile);
-                        await _repository.SaveChangesAsync();
+                        _context.Attach(attachFile);
+                        await _context.SaveChangesAsync();
                     }
                 }
                 catch (Exception)
@@ -366,7 +373,7 @@ namespace NoticeBoard.Controllers
                 foreach (var deleteFileId in array)
                 {
                     var intFileId = int.Parse(deleteFileId);
-                    var filePaths = await _repository.AttachFiles
+                    var filePaths = await _context.AttachFiles
                         .Where(p => p.FileId == intFileId)
                         .Select(p => p.FilePath)
                         .ToListAsync();
@@ -377,28 +384,28 @@ namespace NoticeBoard.Controllers
                             System.IO.File.Delete(filePath);
                         }
                     }
-                    var deleteAttachFileId = await _repository.AttachFiles.FindAsync(intFileId);
+                    var deleteAttachFileId = await _context.AttachFiles.FindAsync(intFileId);
                     if (deleteAttachFileId != null)
                     {
-                        _repository.Remove(deleteAttachFileId);
+                        _context.Remove(deleteAttachFileId);
                     }
-                    await _repository.SaveChangesAsync();
+                    await _context.SaveChangesAsync();
                 }
             }
 
             return RedirectToAction("Details", new { id = id });
         }
 
-
+        
         [HttpDelete]
         //[ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            if (_repository.Posts == null)
+            if (_context.Posts == null)
             {
                 return Problem("Entity set 'NoticeBoardContext.Post'  is null.");
             }
-            var filePaths = await _repository.AttachFiles
+            var filePaths = await _context.AttachFiles
                 .Where(p => p.PostId == id)
                 .Select(p => p.FilePath)
                 .ToListAsync();
@@ -411,19 +418,19 @@ namespace NoticeBoard.Controllers
                 }
             }
 
-            var attachfiles = await _repository.AttachFiles
+            var attachfiles = await _context.AttachFiles
                 .Where(p => p.PostId == id)
                 .ToListAsync();
 
             foreach (var attachfile in attachfiles)
             {
-                _repository.AttachFiles.Remove(attachfile);
+                _context.AttachFiles.Remove(attachfile);
             }
 
-            var comments = _repository.Comments.Where(c => c.PostId == id);
-            _repository.Comments.RemoveRange(comments);
+            var comments = _context.Comments.Where(c => c.PostId == id);
+            _context.Comments.RemoveRange(comments);
 
-            var post = await _repository.Posts.FindAsync(id);
+            var post = await _context.Posts.FindAsync(id);
 
             var content = post.Content;
             var regex = new Regex("<img[^>]+src\\s*=\\s*['\"]([^'\"]+)['\"][^>]*>");
@@ -454,7 +461,7 @@ namespace NoticeBoard.Controllers
         {
             string[] splitId = id.Split(",");
 
-            if (_repository.Posts == null)
+            if (_context.Posts == null)
             {
                 return BadRequest();
             }
@@ -464,7 +471,7 @@ namespace NoticeBoard.Controllers
             for (int i = 0; i < splitId.Length; i++)
             {
                 var intId = int.Parse(splitId[i]);
-                var filePaths = await _repository.AttachFiles
+                var filePaths = await _context.AttachFiles
                                 .Where(p => p.PostId == intId)
                                 .Select(p => p.FilePath)
                                 .ToListAsync();
@@ -477,19 +484,19 @@ namespace NoticeBoard.Controllers
                     }
                 }
 
-                var attachfiles = await _repository.AttachFiles
+                var attachfiles = await _context.AttachFiles
                     .Where(p => p.PostId == intId)
                     .ToListAsync();
 
                 foreach (var attachfile in attachfiles)
                 {
-                    _repository.AttachFiles.Remove(attachfile);
+                    _context.AttachFiles.Remove(attachfile);
                 }
 
-                var comments = _repository.Comments.Where(c => c.PostId == intId);
-                _repository.Comments.RemoveRange(comments);
+                var comments = _context.Comments.Where(c => c.PostId == intId);
+                _context.Comments.RemoveRange(comments);
 
-                var post = await _repository.Posts.FindAsync(intId);
+                var post = await _context.Posts.FindAsync(intId);
 
                 var content = post.Content;
                 var regex = new Regex("<img[^>]+src\\s*=\\s*['\"]([^'\"]+)['\"][^>]*>");
@@ -507,13 +514,13 @@ namespace NoticeBoard.Controllers
                 //}
                 if (post != null)
                 {
-                    _repository.Posts.Remove(post);
+                    _context.Posts.Remove(post);
                     Remove = true;
                 }
             }
 
             if (Remove)
-                await _repository.SaveChangesAsync();
+                await _context.SaveChangesAsync();
 
             return Ok();
         }
@@ -522,7 +529,7 @@ namespace NoticeBoard.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Reply(int id, [Bind("CommentId,PostId,Content")] Comment comment)
         {
-            var post = await _repository.Posts.FindAsync(id);
+            var post = await _context.Posts.FindAsync(id);
 
             if (post == null)
             {
@@ -532,9 +539,9 @@ namespace NoticeBoard.Controllers
             DateTime datetime = DateTime.Now;
             comment.LastUpdated = datetime;
             //comment.PostId = id;
-            _repository.Update(comment);
+            _context.Update(comment);
 
-            await _repository.SaveChangesAsync();
+            await _context.SaveChangesAsync();
             return RedirectToAction("Details", new { id = id });
             //}
         }
@@ -548,19 +555,19 @@ namespace NoticeBoard.Controllers
             {
                 return Problem("Entity set 'NoticeBoardContext.Comments'  is null.");
             }
-            var comment = await _repository.Comments.FindAsync(id);
+            var comment = await _context.Comments.FindAsync(id);
             if (comment != null)
             {
-                _repository.Comments.Remove(comment);
+                _context.Comments.Remove(comment);
             }
 
-            await _repository.SaveChangesAsync();
+            await _context.SaveChangesAsync();
             return RedirectToAction("Details", new { id = comment.PostId });
         }
 
         private bool PostExists(int id)
         {
-            return (_repository.Posts?.Any(e => e.PostId == id)).GetValueOrDefault();
+            return (_context.Posts?.Any(e => e.PostId == id)).GetValueOrDefault();
         }
     }
 }

@@ -1,19 +1,26 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using noticeboard.models;
 using NoticeBoard.Models;
 
-namespace NoticeBoard.Infrastructure
+namespace NoticeBoard.Data
 {
-    public class AppDbContext : DbContext
+    public class NoticeBoardContext : DbContext
     {
-        public AppDbContext(DbContextOptions<AppDbContext> dbContextOptions) :
-    base(dbContextOptions)
-        {
-        }
-        public DbSet<Post> Posts { get; set; }
+        public DbSet<NoticeBoard.Models.Post> Post { get; set; }
+        //public DbSet<NoticeBoard.Models.Comment> Comment { get; set; }
+        public DbSet<Post> Posts { get; set; } 
         public DbSet<Comment> Comments { get; set; }
         public DbSet<FixedCategory> FixedCategories { get; set; }
-        public virtual DbSet<AttachFile> AttachFiles { get; set; }
+        public DbSet<AttachFile> AttachFiles { get; set; }
+
+        public NoticeBoardContext(DbContextOptions<NoticeBoardContext> options)
+            : base(options)
+        {
+        }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -25,6 +32,8 @@ namespace NoticeBoard.Infrastructure
             modelBuilder.Entity<Post>()
                 .Property(p => p.Views)
                 .HasDefaultValue(0);
+            modelBuilder.Entity<FixedCategory>();
         }
+
     }
 }
