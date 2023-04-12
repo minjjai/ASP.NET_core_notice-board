@@ -4,13 +4,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using NoticeBoard.Data;
+using NoticeBoard.Infrastructure;
 
 #nullable disable
 
 namespace NoticeBoard.Migrations
 {
-    [DbContext(typeof(NoticeBoardContext))]
+    [DbContext(typeof(AppDbContext))]
     partial class NoticeBoardContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)

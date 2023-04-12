@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc.Rendering;
-using noticeboard.models;
 using System.Collections.Generic;
 
 namespace NoticeBoard.Models;

@@ -1,11 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc.Rendering;
-using noticeboard.models;
+using NoticeBoard.Infrastructure;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace NoticeBoard.Models
 {
-    public class Post
+    public class Post 
     {
         public int PostId { get; set; }
 
@@ -25,6 +25,7 @@ namespace NoticeBoard.Models
         public List<Comment>? Comments { get; set; }
         //Array를 쓰면 성능은 좋아지지만 LINQ말고 순환문을 써야함
         public List<AttachFile>? AttachFiles { get; set; }
+
     }
     
 }

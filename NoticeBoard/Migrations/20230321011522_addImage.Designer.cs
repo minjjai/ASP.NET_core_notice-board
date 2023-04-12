@@ -5,13 +5,13 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using NoticeBoard.Data;
+using NoticeBoard.Infrastructure;
 
 #nullable disable
 
 namespace NoticeBoard.Migrations
 {
-    [DbContext(typeof(NoticeBoardContext))]
+    [DbContext(typeof(AppDbContext))]
     [Migration("20230321011522_addImage")]
     partial class addImage
     {
