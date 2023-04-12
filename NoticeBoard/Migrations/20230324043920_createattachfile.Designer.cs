@@ -5,13 +5,13 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using NoticeBoard.Core.Model;
+using NoticeBoard.Infrastructure;
 
 #nullable disable
 
 namespace NoticeBoard.Migrations
 {
-    [DbContext(typeof(NoticeBoardContext))]
+    [DbContext(typeof(AppDbContext))]
     [Migration("20230324043920_createattachfile")]
     partial class createattachfile
     {

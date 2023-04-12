@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
-using noticeboard.models;
 using NoticeBoard.Core.Interfaces;
 using NoticeBoard.Models;
 using NuGet.Protocol.Core.Types;
@@ -14,15 +13,41 @@ namespace NoticeBoard.Infrastructure
 {
     public class EFNoticeboardRepository : INoticeBoardRepository
     {
-        private readonly AppDbContext _context;
-        public EFNoticeboardRepository(AppDbContext dbContext)
+        private readonly IAppDbContext _context;
+        public EFNoticeboardRepository(IAppDbContext dbContext)
         {
             _context = dbContext;
         }
 
+        //List<Post> data = new List<Post>
+        //{
+        //    new Post()
+        //    {
+        //        PostId = 1,
+        //        Title = "Dummy Post 1",
+        //        Content = "This is a dummy post.",
+        //        LastUpdated = DateTime.Now,
+        //        Views = 0,
+        //        Category = "1",
+        //        Nickname = "1"
+        //    }
+        //};
+        //public IQueryable<Post> Posts()
+        //{
+        //    return this.data.AsQueryable();
+        //}
+        //public void AddPosts(Post post)
+        //{
+        //    this.data.Add(post);
+        //}
+        public DbSet<Post> Posts()
+        {
+            return _context.Posts;
+        }
+
         public Task SaveChangesAsync()
         {
-            return _context.SaveChangesAsync();
+             return _context.SaveChangesAsync();
         }
         public Task<List<SelectListItem>> SelectAsync()
         {
@@ -33,7 +58,7 @@ namespace NoticeBoard.Infrastructure
             }).ToListAsync();
 
         }
-        public Task<Post> FindAsync(int id)
+        public Task<Post?> FindAsync(int id)
         {
             return _context.Posts
                 .Include(x => x.Comments)
@@ -45,9 +70,15 @@ namespace NoticeBoard.Infrastructure
             _context.Posts.Add(post);
             return _context.SaveChangesAsync();
         }
-        public Task<EntityEntry<AttachFile>> Attach(AttachFile attachFile)
+        public Task AttachAsync(AttachFile attachFile)
         {
-            return Task.FromResult(_context.AttachFiles.Attach(attachFile));
+             _context.AttachFiles.Attach(attachFile);
+            return _context.SaveChangesAsync();
+        }
+
+        public ValueTask<Post?> FindPostAsync(int id)
+        {
+            return _context.Posts.FindAsync(id);
         }
         public Task<List<FixedCategory>> ListAsync()
         {
@@ -59,28 +90,94 @@ namespace NoticeBoard.Infrastructure
             return _context.AttachFiles.Where(p => p.PostId == id).ToListAsync();
         }
 
-        public Task UpdateAsync(Post post)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<Post> FirstOrDefaultAsyncP(int id)
+        public Task<Post?> FirstOrDefaultAsyncP(int id)
         {
             return _context.Posts.FirstOrDefaultAsync(p => p.PostId == id);
         }
 
-        public Task<AttachFile> FirstOrDefaultAsync(int id)
+        public Task UpdateAsync(Post post)
+        {
+            _context.Posts.Update(post);
+            return _context.SaveChangesAsync();
+        }
+
+        public Task<AttachFile?> FirstOrDefaultAsyncA(int id)
         {
             return _context.AttachFiles.FirstOrDefaultAsync(p => p.PostId == id);
         }
-        public Task<List<AttachFile>> SelectList()
+        public Task<List<string>> SelectByFiledId(int intFileId)
         {
-            return _context.Attach
+            return _context.AttachFiles
+                .Where(p => p.FileId == intFileId)
+                .Select(propa => propa.FilePath)
+                .ToListAsync();
         }
 
-        public Task<FixedCategory> ToListAsync()
+        public ValueTask<AttachFile?> FindAsyncA(int intFileId)
         {
-            throw new NotImplementedException();
+            return _context.AttachFiles.FindAsync(intFileId);
+        }
+
+        public Task RemoveAttachFile(AttachFile attachfile)
+        {
+            _context.AttachFiles.Remove(attachfile);
+            return _context.SaveChangesAsync(); 
+        }
+
+        public Task<List<string>> SelectByPostId(int id)
+        {
+            return _context.AttachFiles.Where(p => p.PostId == id)
+                .Select(p => p.FilePath) .ToListAsync();
+        }
+        public Task<List<AttachFile>> FindListAsyncA(int id)
+        {
+            return _context.AttachFiles
+                .Where(p => p.PostId == id)
+                .ToListAsync();
+        }
+
+        public async Task RemoveComments(int id)
+        {
+            var comments = _context.Comments.Where(c => c.PostId == id);
+                 _context.Comments.RemoveRange(comments);
+             await _context.SaveChangesAsync();
+        }
+
+        public ValueTask<Post?> FindAsyncP(int id)
+        {
+            return _context.Posts.FindAsync(id);
+        }
+
+        public async Task RemovePost(Post post)
+        {
+             _context.Posts.Remove(post);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task UpdateAsyncComment(Comment comment)
+        {
+            _context.Comments.Update(comment);
+            await _context.SaveChangesAsync();
+        }
+
+        public DbSet<Comment> Comments()
+        {
+            return _context.Comments;
+        }
+
+        public ValueTask<Comment?> FIndAsyncComment(int id)
+        {
+            return _context.Comments.FindAsync(id);
+        }
+        
+        public async Task RemoveComment(Comment comment)
+        {
+             _context.Comments.Remove(comment);
+            await _context.SaveChangesAsync();
+        }
+        public async Task<bool> PostExistsAsync(int id)
+        {
+            return await Task.FromResult(_context.Posts?.Any(e => e.PostId == id) ?? false);
         }
     }
 }

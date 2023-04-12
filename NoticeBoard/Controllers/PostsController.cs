@@ -20,79 +20,82 @@ using NoticeBoard.Infrastructure;
 
 namespace NoticeBoard.Controllers
 {
-    //종속성 주입
     public class PostsController : Controller
     {
-        private readonly AppDbContext _context;
         private readonly INoticeBoardRepository _repository;
-        private IWebHostEnvironment hostEnv;
 
-        public PostsController(AppDbContext context, INoticeBoardRepository repository, IWebHostEnvironment env)
+        public PostsController(INoticeBoardRepository repository)
         {
-            _context = context;
             _repository = repository;
-            hostEnv = env;
         }
 
         // GET: Posts
         public async Task<IActionResult> Index(string postCategory, string searchString, string sortOrder, int? page)
         {
-            if (_context.Posts == null)
+            if (_repository.Posts() == null)
             {
                 return Problem("Entity set 'NoticeBoard.Post'  is null.");
             }
-
-            int pageSize = 8;
-            int pageNumber = page.HasValue && page.Value > 0 ? page.Value : 1;
-            //페이지값이 널인경우 1을 반환 1보다 안작아서 페이지값가져옴 페이지가 널이아니면 페이지값반환 1보다 작을시 1을 반환
-
-            // Use LINQ to get list of genres.
-            IQueryable<string> categoryQuery = from m in _context.Posts
-                                               orderby m.Category
-                                               select m.Category;
-
-            var posts = from m in _context.Posts
-                        select m;
-
-
-            if (!string.IsNullOrEmpty(searchString))
+            PostsViewModel? viewModel = null;
+            try
             {
-                posts = posts.Where(s => s.Title!.Contains(searchString));
+
+                int pageSize = 8;
+                int pageNumber = page.HasValue && page.Value > 0 ? page.Value : 1;
+                //페이지값이 널인경우 1을 반환 1보다 안작아서 페이지값가져옴 페이지가 널이아니면 페이지값반환 1보다 작을시 1을 반환
+
+                // Use LINQ to get list of genres.
+                IQueryable<string> categoryQuery = from m in _repository.Posts()
+                                                   orderby m.Category
+                                                   select m.Category;
+
+                var posts = from m in _repository.Posts()
+                            select m;
+
+
+                if (!string.IsNullOrEmpty(searchString))
+                {
+                    posts = posts.Where(s => s.Title!.Contains(searchString));
+                }
+
+                if (!string.IsNullOrEmpty(postCategory))
+                {
+                    posts = posts.Where(x => x.Category == postCategory);
+                }
+
+                switch (sortOrder)
+                {
+                    default:
+                        posts = posts.OrderByDescending(s => s.LastUpdated);
+                        break;
+                    case "PastOrder":
+                        posts = posts.OrderBy(s => s.LastUpdated);
+                        break;
+                    case "Views":
+                        posts = posts.OrderByDescending(s => s.Views);
+                        break;
+                }
+
+                var totalPosts = await posts.CountAsync();
+                var totalPages = (int)Math.Ceiling((decimal)totalPosts / pageSize);
+                var categories = await _repository.SelectAsync();
+
+                viewModel = new PostsViewModel
+                {
+                    Posts = await posts.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync(),
+                    Categories = categories,
+                    TotalPages = totalPages,
+                    CurrentPage = pageNumber,
+                    PageSize = pageSize,
+                    PostCategory = postCategory,
+                    SearchString = searchString,
+                    SortOrder = sortOrder,
+                };
             }
-
-            if (!string.IsNullOrEmpty(postCategory))
+            catch (Exception ex)
             {
-                posts = posts.Where(x => x.Category == postCategory);
+                Console.WriteLine(ex.ToString());
             }
-
-            switch (sortOrder)
-            {
-                default:
-                    posts = posts.OrderByDescending(s => s.LastUpdated);
-                    break;
-                case "PastOrder":
-                    posts = posts.OrderBy(s => s.LastUpdated);
-                    break;
-                case "Views":
-                    posts = posts.OrderByDescending(s => s.Views);
-                    break;
-            }
-
-            var totalPosts = await posts.CountAsync();
-            var totalPages = (int)Math.Ceiling((decimal)totalPosts / pageSize);
-            var categories = await _repository.SelectAsync();
-
-            var viewModel = new PostsViewModel
-            {
-                Posts = await posts.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync(),
-                Categories = categories,
-                TotalPages = totalPages,
-                CurrentPage = pageNumber,
-                PageSize = pageSize,
-                PostCategory = postCategory,
-                SearchString = searchString,
-                SortOrder = sortOrder,
-            };
 
             return View(viewModel);
         }
@@ -100,7 +103,7 @@ namespace NoticeBoard.Controllers
         // GET: Posts/Details/5
         public async Task<IActionResult> Details(int id)
         {
-            if (id == null || _context.Posts == null)
+            if ( _repository.Posts() == null)
             {
                 return NotFound();
             }
@@ -142,13 +145,13 @@ namespace NoticeBoard.Controllers
         {
             DateTime datetime = DateTime.Now;
             post.LastUpdated = datetime;
-            _repository.AddAsync(post);
+            await _repository.AddAsync(post);
             await _repository.SaveChangesAsync();
 
             if (Files?.Count > 0)
             {
                 var files = Request.Form.Files;
-                var uploadPath = Path.Combine(hostEnv.WebRootPath, "Files");
+                var uploadPath = Path.Combine(AppContext.BaseDirectory, "wwwroot", "Files");
                 for (var i = 0; i < Files.Count; i++)
                 {
                     var file = files[i];
@@ -169,8 +172,7 @@ namespace NoticeBoard.Controllers
                         FileData = System.IO.File.ReadAllBytes(filePath),
                         PostId = post.PostId
                     };
-                    _repository.Attach(attachFile); //이미 데이터베이스에 있는 엔터티를 수정하려는 경우 사용
-                    await _repository.SaveChangesAsync();
+                   await _repository.AttachAsync(attachFile); //이미 데이터베이스에 있는 엔터티를 수정하려는 경우 사용
                 }
             }
 
@@ -182,7 +184,7 @@ namespace NoticeBoard.Controllers
         public async Task<IActionResult> Upload(IFormFile file)
         {
             var fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
-            var uploadPath = Path.Combine(hostEnv.WebRootPath, "Files");
+            var uploadPath = Path.Combine(AppContext.BaseDirectory, "wwwroot", "Files");
             var filePath = Path.Combine(uploadPath, fileName);
 
             using (var stream = new FileStream(filePath, FileMode.Create))
@@ -196,57 +198,63 @@ namespace NoticeBoard.Controllers
         // GET: Posts/Edit/5
         public async Task<IActionResult> Edit(int id)
         {
-            var post = await _repository.FindAsync(id);
-
-            if (await _repository.FirstOrDefaultAsync(id) != null)
+            try
             {
-                var categories = await _repository.ListAsync();
-                //var attachFiles = await _context.AttachFiles.ToListAsync();
-                var viewModel = new CategoryViewModel
-                {
-                    PostId = post.PostId,
-                    Category = post.Category,
-                    Nickname = post.Nickname,
-                    Title = post.Title,
-                    Content = post.Content,
-                    Categories = categories.Select(c => new SelectListItem
-                    {
-                        Text = c.Categories,
-                        Value = c.Categories,
-                        Selected = (post.Category == c.Categories)
-                    }),
-                    //FileNames = attachFiles.Select(c => new SelectListItem
-                    //{
-                    //    Text = c.FileName,
-                    //    Value = c.FileName,
-                    //    Selected = (post.PostId == c.PostId)
-                    //}),
-                };
+                var post = await _repository.FindPostAsync(id);
 
-                return View(viewModel);
+                if (await _repository.FirstOrDefaultAsyncA(id) != null) ///?
+                {
+                    var categories = await _repository.ListAsync();
+                    //var attachFiles = await _context.AttachFiles.ToListAsync();
+                    var viewModel = new CategoryViewModel
+                    {
+                        PostId = post.PostId,
+                        Category = post.Category,
+                        Nickname = post.Nickname,
+                        Title = post.Title,
+                        Content = post.Content,
+                        Categories = categories.Select(c => new SelectListItem
+                        {
+                            Text = c.Categories,
+                            Value = c.Categories,
+                            Selected = (post.Category == c.Categories)
+                        }),
+                        //FileNames = attachFiles.Select(c => new SelectListItem
+                        //{
+                        //    Text = c.FileName,
+                        //    Value = c.FileName,
+                        //    Selected = (post.PostId == c.PostId)
+                        //}),
+                    };
+
+                    return View(viewModel);
+                }
+                else
+                {
+
+                    var categories = await _repository.ListAsync();
+                    var viewModel = new CategoryViewModel
+                    {
+                        PostId = post.PostId,
+                        Nickname = post.Nickname,
+                        Title = post.Title,
+                        Content = post.Content,
+                        Categories = categories.Select(c => new SelectListItem
+                        {
+                            Text = c.Categories,
+                            Value = c.Categories,
+                            Selected = (post.Category == c.Categories)
+                        })
+                    };
+
+                    return View(viewModel);
+                }
             }
-            else
+            catch (Exception ex)
             {
-
-                var categories = await _repository.ListAsync();
-                var viewModel = new CategoryViewModel
-                {
-                    PostId = post.PostId,
-                    Nickname = post.Nickname,
-                    Title = post.Title,
-                    Content = post.Content,
-                    Categories = categories.Select(c => new SelectListItem
-                    {
-                        Text = c.Categories,
-                        Value = c.Categories,
-                        Selected = (post.Category == c.Categories)
-                    })
-                };
-
-                return View(viewModel);
+                Console.WriteLine(ex.Message);
+                return View(null);
             }
-
-
         }
 
 
@@ -260,7 +268,7 @@ namespace NoticeBoard.Controllers
                 FileName = p.FileName,
                 FileSize = p.FileData.Length
             });
-            Console.WriteLine(result);
+            Console.WriteLine(Json(result).Value);
             return Json(result);
         }
 
@@ -269,7 +277,7 @@ namespace NoticeBoard.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [FromForm] Post post, [FromForm] string? FileId = null, ICollection<IFormFile>? Files = null)
+        public async Task<IActionResult> Edit(int id, [FromForm] Post post, ICollection<IFormFile> Files, [FromForm] string? FileId = null )
         {
             if (id != post.PostId)
             {
@@ -281,7 +289,7 @@ namespace NoticeBoard.Controllers
                 try
                 {
                     //editor의 사진이 변경된경우 
-                    var rootPath = Path.Combine(hostEnv.WebRootPath, "Files");
+                    var rootPath = Path.Combine(AppContext.BaseDirectory, "wwwroot", "Files");
 
                     var beforePost = await _repository.FindAsync(id);
                     var beforeContent = beforePost.Content;
@@ -304,19 +312,18 @@ namespace NoticeBoard.Controllers
                             System.IO.File.Delete(imagePathB);
                         }
                     }
-                    var Post = await _repository.Posts.FirstOrDefaultAsync(p => p.PostId == id);
+                    var Post = await _repository.FirstOrDefaultAsyncP(id);
                     DateTime datetime = DateTime.Now;
                     Post.Nickname = post.Nickname;
                     Post.Title = post.Title;
                     Post.Content = post.Content;
                     Post.LastUpdated = datetime;
                     Post.Category = post.Category;
-                    _repository.Update(Post);
-                    await _repository.SaveChangesAsync();
+                   await _repository.UpdateAsync(Post);
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!PostExists(post.PostId))
+                    if (!await PostExists(post.PostId))
                     {
                         return NotFound();
                     }
@@ -327,9 +334,9 @@ namespace NoticeBoard.Controllers
                 }
                 //return RedirectToAction(nameof(Index));
             }
-            if (Request.Form.Files.Count != 0)
+            if (Files.Count != 0)
             {
-                var uploadPath = Path.Combine(hostEnv.WebRootPath, "Files");
+                var uploadPath = Path.Combine(AppContext.BaseDirectory, "wwwroot", "Files");
                 var files = Request.Form.Files;
                 try
                 {
@@ -350,8 +357,7 @@ namespace NoticeBoard.Controllers
                             PostId = post.PostId
                         };
 
-                        _repository.Attach(attachFile);
-                        await _repository.SaveChangesAsync();
+                       await _repository.AttachAsync(attachFile);
                     }
                 }
                 catch (Exception)
@@ -366,10 +372,7 @@ namespace NoticeBoard.Controllers
                 foreach (var deleteFileId in array)
                 {
                     var intFileId = int.Parse(deleteFileId);
-                    var filePaths = await _repository.AttachFiles
-                        .Where(p => p.FileId == intFileId)
-                        .Select(p => p.FilePath)
-                        .ToListAsync();
+                    var filePaths = await _repository.SelectByFiledId(intFileId);
                     foreach (var filePath in filePaths)
                     {
                         if (System.IO.File.Exists(filePath))
@@ -377,10 +380,10 @@ namespace NoticeBoard.Controllers
                             System.IO.File.Delete(filePath);
                         }
                     }
-                    var deleteAttachFileId = await _repository.AttachFiles.FindAsync(intFileId);
+                    var deleteAttachFileId = await _repository.FindAsyncA(intFileId); //Id를 반환하는 건가.. 변수 이름 왜이럼
                     if (deleteAttachFileId != null)
                     {
-                        _repository.Remove(deleteAttachFileId);
+                      await  _repository.RemoveAttachFile(deleteAttachFileId);///?
                     }
                     await _repository.SaveChangesAsync();
                 }
@@ -394,14 +397,11 @@ namespace NoticeBoard.Controllers
         //[ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            if (_repository.Posts == null)
+            if (_repository.Posts() == null)
             {
                 return Problem("Entity set 'NoticeBoardContext.Post'  is null.");
             }
-            var filePaths = await _repository.AttachFiles
-                .Where(p => p.PostId == id)
-                .Select(p => p.FilePath)
-                .ToListAsync();
+            var filePaths = await _repository.SelectByPostId(id);
 
             foreach (var filePath in filePaths)
             {
@@ -411,24 +411,21 @@ namespace NoticeBoard.Controllers
                 }
             }
 
-            var attachfiles = await _repository.AttachFiles
-                .Where(p => p.PostId == id)
-                .ToListAsync();
+            var attachfiles = await _repository.FindListAsyncA(id);
 
             foreach (var attachfile in attachfiles)
             {
-                _repository.AttachFiles.Remove(attachfile);
+               await _repository.RemoveAttachFile(attachfile);
             }
 
-            var comments = _repository.Comments.Where(c => c.PostId == id);
-            _repository.Comments.RemoveRange(comments);
+            await _repository.RemoveComments(id);
 
-            var post = await _repository.Posts.FindAsync(id);
+            var post = await _repository.FindAsyncP(id);
 
             var content = post.Content;
             var regex = new Regex("<img[^>]+src\\s*=\\s*['\"]([^'\"]+)['\"][^>]*>");
             var match = regex.Match(content);
-            var rootPath = Path.Combine(hostEnv.WebRootPath, "Files");
+            var rootPath = Path.Combine(AppContext.BaseDirectory, "wwwroot", "Files");
             //foreach (Match match in matches) //져러장 업로드는 돈내야 한단다
             //{
             var imageUrl = match.Groups[1].Value;
@@ -442,10 +439,10 @@ namespace NoticeBoard.Controllers
 
             if (post != null)
             {
-                _context.Posts.Remove(post);
+                _repository.RemovePost(post);
             }
 
-            await _context.SaveChangesAsync();
+            await _repository.SaveChangesAsync();
             return Ok();
         }
 
@@ -454,7 +451,7 @@ namespace NoticeBoard.Controllers
         {
             string[] splitId = id.Split(",");
 
-            if (_repository.Posts == null)
+            if (_repository.Posts() == null)
             {
                 return BadRequest();
             }
@@ -464,10 +461,7 @@ namespace NoticeBoard.Controllers
             for (int i = 0; i < splitId.Length; i++)
             {
                 var intId = int.Parse(splitId[i]);
-                var filePaths = await _repository.AttachFiles
-                                .Where(p => p.PostId == intId)
-                                .Select(p => p.FilePath)
-                                .ToListAsync();
+                var filePaths = await _repository.SelectByPostId(intId);
 
                 foreach (var filePath in filePaths)
                 {
@@ -477,24 +471,21 @@ namespace NoticeBoard.Controllers
                     }
                 }
 
-                var attachfiles = await _repository.AttachFiles
-                    .Where(p => p.PostId == intId)
-                    .ToListAsync();
+                var attachfiles = await _repository.FindListAsyncA(intId);
 
                 foreach (var attachfile in attachfiles)
                 {
-                    _repository.AttachFiles.Remove(attachfile);
+                   await _repository.RemoveAttachFile(attachfile);
                 }
 
-                var comments = _repository.Comments.Where(c => c.PostId == intId);
-                _repository.Comments.RemoveRange(comments);
+                var comments = _repository.RemoveComments(intId);
 
-                var post = await _repository.Posts.FindAsync(intId);
+                var post = await _repository.FindAsyncP(intId);
 
                 var content = post.Content;
                 var regex = new Regex("<img[^>]+src\\s*=\\s*['\"]([^'\"]+)['\"][^>]*>");
                 var match = regex.Match(content);
-                var rootPath = Path.Combine(hostEnv.WebRootPath, "Files");
+                var rootPath = Path.Combine(AppContext.BaseDirectory, "wwwroot", "Files");
                 //foreach (Match match in matches)
                 //{
                 var imageUrl = match.Groups[1].Value;
@@ -507,7 +498,7 @@ namespace NoticeBoard.Controllers
                 //}
                 if (post != null)
                 {
-                    _repository.Posts.Remove(post);
+                    await _repository.RemovePost(post);
                     Remove = true;
                 }
             }
@@ -522,7 +513,7 @@ namespace NoticeBoard.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Reply(int id, [Bind("CommentId,PostId,Content")] Comment comment)
         {
-            var post = await _repository.Posts.FindAsync(id);
+            var post = await _repository.FindAsyncP(id);
 
             if (post == null)
             {
@@ -532,7 +523,7 @@ namespace NoticeBoard.Controllers
             DateTime datetime = DateTime.Now;
             comment.LastUpdated = datetime;
             //comment.PostId = id;
-            _repository.Update(comment);
+            await _repository.UpdateAsyncComment(comment);
 
             await _repository.SaveChangesAsync();
             return RedirectToAction("Details", new { id = id });
@@ -544,23 +535,23 @@ namespace NoticeBoard.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteC(int id)
         {
-            if (_context.Comments == null)
+            if (_repository.Comments() == null)
             {
                 return Problem("Entity set 'NoticeBoardContext.Comments'  is null.");
             }
-            var comment = await _repository.Comments.FindAsync(id);
+            var comment = await _repository.FIndAsyncComment(id);
             if (comment != null)
             {
-                _repository.Comments.Remove(comment);
+               await _repository.RemoveComment(comment);
             }
 
             await _repository.SaveChangesAsync();
             return RedirectToAction("Details", new { id = comment.PostId });
         }
 
-        private bool PostExists(int id)
+        private Task<bool> PostExists(int id)
         {
-            return (_repository.Posts?.Any(e => e.PostId == id)).GetValueOrDefault();
+            return _repository.PostExistsAsync(id);
         }
     }
 }

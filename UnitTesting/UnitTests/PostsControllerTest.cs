@@ -10,190 +10,121 @@ using Moq;
 using NoticeBoard.Models;
 using Xunit;
 using NoticeBoard.Core.Interfaces;
-using NoticeBoard.Core.Model;
+using Microsoft.AspNetCore.Hosting;
+using NoticeBoard.Infrastructure;
+using Microsoft.Extensions.FileProviders;
+using NuGet.Protocol.Core.Types;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using System.Configuration;
+using NoticeBoard;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Build.Framework;
+//using NoticeBoard.Core.Model;
 
 namespace UnitTests.Controllers
 {
-
-    //public static class SampleData
-    //{
-    //    public static List<Post> GetPosts()
-    //    {
-    //        return new List<Post>
-    //        {
-    //            new Post
-    //            {
-    //                PostId = 1,
-    //                Title = "Dummy Post 1",
-    //                Content = "This is a dummy post.",
-    //                LastUpdated = DateTime.Now,
-    //                Views = 0, Category = "1",
-    //                Nickname = "1"
-    //            }
-    //        };
-    //    }
-    //    public static List<AttachFile> GetAttachFiles()
-    //    {
-    //        return new List<AttachFile>
-    //        {
-    //            new AttachFile {
-    //                FileId = 1,
-    //                FileName = "aaa.jpg",
-    //                FilePath = "c:/Users/Minjae13.kim/FilePath",
-    //                PostId = 1
-    //            }
-    //        };
-    //    }
-    //}
-
-    //public static class TestStartup
-    //{
-    //    public static void ConfigureServices(IServiceCollection services)
-    //    {
-    //        var options = new DbContextOptionsBuilder<NoticeBoardContext>()
-    //          .UseInMemoryDatabase(databaseName: "MockDb")
-    //          .Options;
-    //        var context = new MockNoticeBoardContext(options);
-    //        var mockSet = new Mock<IDbSet<Post>>();
-    //        mockSet.As<IQueryable<Post>>().Setup(m => m.Provider).Returns(SampleData.GetPosts().AsQueryable().Provider);
-    //        mockSet.As<IQueryable<Post>>().Setup(m => m.Expression).Returns(SampleData.GetPosts().AsQueryable().Expression);
-    //        mockSet.As<IQueryable<Post>>().Setup(m => m.ElementType).Returns(SampleData.GetPosts().AsQueryable().ElementType);
-    //        mockSet.As<IQueryable<Post>>().Setup(m => m.GetEnumerator()).Returns(() => SampleData.GetPosts().AsQueryable().GetEnumerator());
-
-    //        context.Posts = mockSet.Object;
-
-    //        var mockSet2 = new Mock<IDbSet<AttachFile>>();
-    //        mockSet2.As<IQueryable<AttachFile>>().Setup(m => m.Provider).Returns(SampleData.GetAttachFiles().AsQueryable().Provider);
-    //        mockSet2.As<IQueryable<AttachFile>>().Setup(m => m.Expression).Returns(SampleData.GetAttachFiles().AsQueryable().Expression);
-    //        mockSet2.As<IQueryable<AttachFile>>().Setup(m => m.ElementType).Returns(SampleData.GetAttachFiles().AsQueryable().ElementType);
-    //        mockSet2.As<IQueryable<AttachFile>>().Setup(m => m.GetEnumerator()).Returns(() => SampleData.GetAttachFiles().GetEnumerator());
-
-    //        context.AttachFiles = mockSet2.Object;
-    //        services.AddScoped<INoticeBoardContext, NoticeBoardContext>(_ => context);
-    //    }
-    //}
-    public class PostsControllerTest
+    public class DependencySetupFixture
     {
-        //private readonly NoticeBoardContext _context;
-        //private IWebHostEnvironment hostEnv;
-        //public PostsControllerTest(NoticeBoardContext context)
-        //{
-        //    _context = context;
-        //    hostEnv = new Mock<IWebHostEnvironment>().Object;
-        //}
-        ////index에서 리턴되는 뷰모델의 값들이 들어오는 값과 같은지 확인
-        //[Theory]
-        //[InlineData(null, null, "PastOrder", 1)]
-        //public async Task Index_ReturnsAViewResult_PostsViewModel(string postCategory, string searchString, string sortOrder, int? page)
-        //{
-        //    //Arrange
-        //    var options = new DbContextOptionsBuilder<NoticeBoardContext>().Options;
-        //    using var context = new MockNoticeBoardContext(options);
+        public DependencySetupFixture() //의존성 주입 컨테이너를 설정하는 xUnit 테스트 클래스 생성자
+        {
+            IConfigurationBuilder builder = new ConfigurationBuilder() //IConfigurationBuilder인스턴스를 생성해서 
+                  .SetBasePath(Directory.GetCurrentDirectory())
+                  .AddJsonFile("appsettings.json", false, true);//appsetting파일을 읽음
+            IConfigurationRoot root = builder.Build();
+            var services = new ServiceCollection(); //ServiceCollection 인스턴스를 만듦
+            services = (ServiceCollection)IocConfig.Configure(services);
+            //IocConfig.Configure메서드를 사용해서 ServiceCollection에 의존성 주입 등록
 
-        //    var mockEnvironment = new Mock<IWebHostEnvironment>();
+            ServiceProvider = services.BuildServiceProvider();//BuildServiceProvider메서드로 빌드해서 ServiceProvider속성에 할당
+        }
 
-        //    var controller = new PostsController(context, mockEnvironment.Object);
+        public ServiceProvider ServiceProvider { get; private set; }
+    }
+    public class PostsControllerTest : IClassFixture<DependencySetupFixture>
+    {
+        private readonly IAppDbContext context;
+        private readonly INoticeBoardRepository _repository;
+        public PostsControllerTest(DependencySetupFixture fixture)
+        {
+            _repository = fixture.ServiceProvider.GetService<INoticeBoardRepository>();
+            context = fixture.ServiceProvider.GetService<IAppDbContext>();
+            AddTestData(context);
+        }
 
-        //    //Act 
-        //    var result = await controller.Index(postCategory, searchString, sortOrder, page);
+        [Theory]
+        [InlineData(null, null, "PastOrder", 1)]
+        public async Task Index_ReturnsAViewResult_PostsViewModel(string postCategory, string searchString, string sortOrder, int? page)
+        {
+            //Arrange
+            var controller = new PostsController(_repository);
 
-        //    //Assert
-        //    var viewResult = Assert.IsType<ViewResult>(result);
+            //Act 
+            var result = await controller.Index(postCategory, searchString, sortOrder, page);
 
-        //    var model = Assert.IsAssignableFrom<PostsViewModel>(viewResult.ViewData.Model);
-        //    Assert.Equal(postCategory, model.PostCategory);
-        //    Assert.Equal(searchString, model.SearchString);
-        //    Assert.Equal(sortOrder, model.SortOrder);
-        //    Assert.Equal(page, model.CurrentPage);
-        //}
+            //Assert
+            var viewResult = Assert.IsType<ViewResult>(result);
 
-        ////들어오는 id값과 반환되는 게시글의 id값과 같은지 확인
-        //[Theory]
-        //[InlineData(1)]
-        //public async Task Details_RturnsAViewResult_Posts(int id)
-        //{
-        //    //Araange
-        //    var options = new DbContextOptionsBuilder<NoticeBoardContext>().Options;
-        //    using var context = new MockNoticeBoardContext(options);
-        //    var mockEnvironment = new Mock<IWebHostEnvironment>();
+            var model = Assert.IsAssignableFrom<PostsViewModel>(viewResult.ViewData.Model); //object가 T타입으로 반환 가능한지 검사
+            Assert.Equal(postCategory, model.PostCategory);
+            Assert.Equal(searchString, model.SearchString);
+            Assert.Equal(sortOrder, model.SortOrder);
+            Assert.Equal(page, model.CurrentPage);
+        }
 
-        //    var controller = new PostsController(context, mockEnvironment.Object);
+        [Theory]
+        [InlineData(1)]
+        public async Task Details_ReturnsAViewResult_Posts(int id)
+        {
+            //Araange
+            var controller = new PostsController(_repository);
 
-        //    //Act
-        //    var result = await controller.Details(id);
+            //Act
+            var result = await controller.Details(id);
 
-        //    //Assert
-        //    var viewResult = Assert.IsType<ViewResult>(result);
-        //    var model = Assert.IsAssignableFrom<Post>(viewResult.ViewData.Model);
-        //    Assert.Equal(id, model.PostId);
+            //Assert
+            var viewResult = Assert.IsType<ViewResult>(result); // object의 타입이 T 타입이면 T 타입으로 변환
+            var model = Assert.IsAssignableFrom<Post>(viewResult.ViewData.Model);
+            Assert.Equal(id, model.PostId);
+        }
 
-        //}
+        [Fact]
+        public async Task Create_ReturnsAViewResult_Post()
+        {
+            //Arrange
+            var controller = new PostsController(_repository);
 
-        ////카테고리뷰모델형식이 반환되는지 확인
-        //[Fact]
-        //public async Task Create_ReturnsAViewResult()
-        //{
-        //    //Arrange
-        //    var options = new DbContextOptionsBuilder<NoticeBoardContext>().Options;
-        //    using var context = new MockNoticeBoardContext(options);
-        //    var mockEnvironment = new Mock<IWebHostEnvironment>();
-        //    var controller = new PostsController(context, mockEnvironment.Object);
+            //Act
+            var result = await controller.Create();
 
-        //    var categories = await context.FixedCategories.Select(c => new SelectListItem
-        //    {
-        //        Value = c.Categories,
-        //        Text = c.Categories
-        //    }).ToListAsync();
+            //Assert
+            var FixedCategories = await _repository.SelectAsync();
+            var viewResult = Assert.IsType<ViewResult>(result);
+            var model = Assert.IsAssignableFrom<CategoryViewModel>(viewResult.ViewData.Model);
+            Assert.IsType<CategoryViewModel>(model);
+            Assert.Equal(FixedCategories, model.Categories);
+        }
 
-        //    //Act
-        //    var result = await controller.Create();
+        [Theory]
+        [InlineData("Nickname", "Test Title", "Test Content", "Test Category", null)]
+        public async Task Create_ReturnsRedirect_Post(string Nickname, string Title, string Content, string Category, ICollection<IFormFile>? Files)
+        {
+            //Arrange
+            var controller = new PostsController(_repository);
 
-        //    //Assert
-        //    var viewResult = Assert.IsType<ViewResult>(result);
+            //Act
+            var post = new Post { Nickname = Nickname, Title = Title, Content = Content, Category = Category };
+            var result = await controller.Create(post, null);
 
-        //    var model = Assert.IsAssignableFrom<CategoryViewModel>(viewResult.ViewData.Model);
-        //    Assert.IsType<CategoryViewModel>(model);
-        //}
+            //Assert
+            Assert.IsType<RedirectToActionResult>(result);
+        }
 
-        ////값이 들어오면 index페이지로 리다이렉트 되는지...
-        //[Theory]
-        //[InlineData("Nickname", "Test Title", "Test Content", "Test Category", null)]
-        //public async Task Create_Post(string Nickname, string Title, string Content, string Category, ICollection<IFormFile>? Files)
-        //{
-        //    //Arrange
-        //    var options = new DbContextOptionsBuilder<NoticeBoardContext>().Options;
-        //    using var context = new MockNoticeBoardContext(options);
-        //    var mockEnvironment = new Mock<IWebHostEnvironment>();
-        //    var controller = new PostsController(context, mockEnvironment.Object);
-
-        //    //Act
-        //    var post = new Post { Nickname = Nickname, Title = Title, Content = Content, Category = Category };
-
-        //    ICollection<IFormFile> files = new List<IFormFile>
-        //    {
-        //        new FormFile(Stream.Null, 0, 0, "file1", "file1.txt"),
-        //        new FormFile(Stream.Null, 0, 0, "file2", "file2.jpg"),
-        //        new FormFile(Stream.Null, 0, 0, "file3", "file3.pdf")
-        //    };
-        //    var result = await controller.Create(post, null);
-
-        //    //Assert
-        //    var RedirectToActionResult = Assert.IsType<RedirectToActionResult>(result);
-        //}
-
-        //id값으로 뷰리절트 반환
         [Fact]
         public async Task Edit_ReturnsViewResult_Post()
         {
-            //Arrange
-            var mockContext = new Mock<INoticeBoardContext>();
-            mockContext.Setup(mockContext => mockContext.ListAsync())
-                .ReturnsAsync(GetTestPosts());
-            mockContext.Setup(mockContext => mockContext.ListAsync())
-                .ReturnsAsync(GetTestAttachFiles());
-            var env = new Mock<IWebHostEnvironment>();
-
-            var controller = new PostsController(mockContext.Object, env.Object);
+            //Arrange 
+            var controller = new PostsController(_repository);
 
             //Act
             var result = await controller.Edit(1);
@@ -203,10 +134,86 @@ namespace UnitTests.Controllers
             var model = Assert.IsAssignableFrom<CategoryViewModel>(viewResult.Model);
             Assert.Equal(1, model.PostId);
         }
-        public List<Post> GetTestPosts()
+
+        [Fact]
+        public async Task GetFiles_ReturnsJsonResult_AttackFile()
         {
-            var posts = new List<Post>();
-            posts.Add(new Post()
+            //Arrange
+            var controller = new PostsController(_repository);
+
+            //Act
+            var result = await controller.GetFiles(1);
+
+            //Assert
+            Assert.IsType<JsonResult>(result);
+        }
+
+        [Theory]
+        [InlineData(1, null)]
+        public async Task Edit_ReturnsRedirect_Post(int id, [FromForm] string? FileId = null )
+        {
+            //Arrange
+            ICollection<IFormFile> files = Enumerable.Empty<IFormFile>().ToList();
+            var controller = new PostsController(_repository);
+            var post = new Post { PostId = 1, Nickname = "Nickname", Title = "Title", Content = "Content", Category = "Category" };
+
+            //Act
+            var result = await controller.Edit(id, post, files, FileId);
+
+            //Assert
+            Assert.IsType<RedirectToActionResult>(result);
+        }
+
+        [Fact]
+        public async Task DeleteConfirmed_ReturnsOk_Contextt()
+        {
+            //Arrange 
+            var controller = new PostsController (_repository);
+
+            //Act
+            var result = await controller.DeleteConfirmed(1);
+
+            //Assert
+            Assert.IsType<OkResult>(result);
+        }
+
+        [Theory]
+        [InlineData("1")]
+        public async Task DeleteIds_ReturnsOk_Context(string id)
+        {
+            //Arrange 
+            var controller = new PostsController(_repository);
+
+            //Act
+            var result = await controller.DeleteIds(id);
+
+            //Assert
+            Assert.IsType<OkResult>(result);
+        }
+
+        [Fact]
+        public async Task DeleteC_ReturnsRedirectWithObject_Post()
+        {
+            //Arrange
+            var controller = new PostsController( _repository);
+            context.Add(new Comment()
+            {
+                CommentId = 1,
+                Content = "Content",
+                LastUpdated = DateTime.Now,
+                PostId = 1
+            });
+            //Act
+            var result = await controller.DeleteC(1);
+
+            //Assert
+            var redirectResult = Assert.IsType<RedirectToActionResult>(result);
+            Assert.Equal(redirectResult.RouteValues["id"], 1);
+        }
+
+        private static void AddTestData(IAppDbContext context)
+        {
+            context.Add(new Post()
             {
                 PostId = 1,
                 Title = "Dummy Post 1",
@@ -216,20 +223,14 @@ namespace UnitTests.Controllers
                 Category = "1",
                 Nickname = "1"
             });
-            return posts;
-        }
 
-        public List<AttachFile> GetTestAttachFiles()
-        {
-            var attachFiles = new List<AttachFile>();
-            attachFiles.Add(new AttachFile
+            context.Add(new AttachFile()
             {
                 FileId = 1,
                 FileName = "aaa.jpg",
                 FilePath = "c:/Users/Minjae13.kim/FilePath",
                 PostId = 1
             });
-            return attachFiles;
         }
     }
 }

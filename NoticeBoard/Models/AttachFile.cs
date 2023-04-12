@@ -9,7 +9,7 @@ namespace NoticeBoard.Models
        public int FileId { get; set; }
        public string FileName { get; set; }
        public string FilePath { get; set; }
-       public byte[] FileData { get; set; }
+       public byte[]? FileData { get; set; }
        public int PostId { get; set; }
         public Post Post { get; set; }
     }

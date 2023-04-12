@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using noticeboard.models;
-using NoticeBoard.Core.Model;
+using NoticeBoard.Infrastructure;
 using System;
 using System.Linq;
 
@@ -11,9 +10,9 @@ public static class SeedData
 {
     public static void Initialize(IServiceProvider serviceProvider)
     {
-        using (var context = new NoticeBoardContext(
+        using (var context = new AppDbContext(
             serviceProvider.GetRequiredService<
-                DbContextOptions<NoticeBoardContext>>()))
+                DbContextOptions<AppDbContext>>()))
         {
             // Look for any FixedCategories.
             if (context.FixedCategories.Any())

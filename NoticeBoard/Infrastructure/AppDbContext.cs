@@ -1,27 +1,42 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using noticeboard.models;
 using NoticeBoard.Models;
 
 namespace NoticeBoard.Infrastructure
 {
-    public class AppDbContext : DbContext
+    public class AppDbContext : DbContext, IAppDbContext
     {
-        public AppDbContext(DbContextOptions<AppDbContext> dbContextOptions) :
-    base(dbContextOptions)
+        public AppDbContext(DbContextOptions<AppDbContext> dbContextOptions) : base(dbContextOptions)
         {
         }
+        //public DbSet<Post> Post { get; set; }
         public DbSet<Post> Posts { get; set; }
+        //public DbSet<Comment> Comment { get; set; }
         public DbSet<Comment> Comments { get; set; }
         public DbSet<FixedCategory> FixedCategories { get; set; }
         public virtual DbSet<AttachFile> AttachFiles { get; set; }
 
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        public void Add(Post post)
         {
-            optionsBuilder.UseSqlServer("Data Source=.\\SQLEXPRESS;Initial Catalog=NoticeBoardContext;User ID=sa;Password=123qwe!@#QWE;Connect Timeout=30;Encrypt=False;Trust Server Certificate=False;");
+            Posts.Add(post);
+            this.SaveChanges();
         }
+
+        public void Add(AttachFile attachFile)
+        {
+            AttachFiles.Add(attachFile);
+            this.SaveChanges();
+        }
+        public void Add(Comment comment)
+        {
+            Comments.Add(comment);
+            this.SaveChanges();
+        }
+        public Task SaveChangesAsync() => base.SaveChangesAsync();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<Post>().ToTable("Post");
+
             modelBuilder.Entity<Post>()
                 .Property(p => p.Views)
                 .HasDefaultValue(0);
