@@ -168,7 +168,7 @@
         .create(document.querySelector('#txtarea'), {
             image: {
                 // 강제로 figure 태그를 생성
-                toolbar: ['imageTextAlternative', '|', 'linkImage']
+                toolbar: ['imageTextAlternative', '|', /*'imageStyle:alignLeft', 'imageStyle:full', 'imageStyle:alignRight', 'imageStyle:alignCenter',*/ 'linkImage']
             }
         })
         .then(editor => {
@@ -221,14 +221,12 @@
 
     Dropzone.options.myDropzone = {
 
-        url: 'https://localhost:7004/posts/Create',
+        url: 'https://localhost:7004/posts/create',
         method: 'POST',
-        headers: {
-            'RequestVerificationToken': document.getElementsByName("__RequestVerificationToken")[1].value
-        },
 
         autoProcessQueue: false, // 자동으로 보내기
         clickable: true, // 클릭 가능 여부
+        //autoQueue: false,
         createImageThumbnails: true,
 
         thumbnailHeight: 120,
@@ -285,18 +283,15 @@
             this.on('sending', function (file, xhr, formData) {
                 console.log('보내는중');
 
+                formData["__RequestAntiForgeryToken"] = document.getElementsByName("__RequestVerificationToken")[1].value;
                 formData.append("Nickname", document.getElementById("Nickname").value);
                 formData.append("Title", document.getElementById("Title").value);
                 formData.append("Content", document.getElementById("txtarea").value);
                 formData.append("Category", document.getElementById("Category").value);
                 for (var i = 0; i < myDropzone.files.length; i++) {
                     formData.append("files", myDropzone.files[i]);
-                    console.log(myDropzone.files[i]);
                 }
-
-            }); 
-            //왜 create에서는 헤더에 토큰을담고 폼데이터에 파일을 직접 어팬드 해줘야 할까 
-            //edit에서는 필요없는데 그리고 원래 create도 됐었는데
+            });
 
             // 서버로 파일이 성공적으로 전송되면 실행
             this.on('success', function (file, responseText) {
