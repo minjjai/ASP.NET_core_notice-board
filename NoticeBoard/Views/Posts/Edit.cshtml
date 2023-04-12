@@ -323,7 +323,10 @@
                     formData.append("Content", document.getElementById("Content").value);
                     formData.append("Category", document.getElementById("Category").value);
                     formData.append('FileId', document.querySelector('input[name="File_id"]').value);
-
+                for (var i = 0; i < myDropzone.files.length; i++) {
+                    formData.append("files", myDropzone.files[i]);
+                    console.log(myDropzone.files[i]);
+                }
                 });
 
                 // 서버로 파일이 성공적으로 전송되면 실행

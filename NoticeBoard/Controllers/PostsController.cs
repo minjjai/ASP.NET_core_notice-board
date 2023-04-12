@@ -151,7 +151,7 @@ namespace NoticeBoard.Controllers
             if (Files?.Count > 0)
             {
                 var files = Request.Form.Files;
-                var uploadPath = Path.Combine(AppContext.BaseDirectory, "wwwroot", "Files");
+                var uploadPath = Path.Combine(Environment.CurrentDirectory, "wwwroot", "Files");
                 for (var i = 0; i < Files.Count; i++)
                 {
                     var file = files[i];
@@ -184,7 +184,7 @@ namespace NoticeBoard.Controllers
         public async Task<IActionResult> Upload(IFormFile file)
         {
             var fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
-            var uploadPath = Path.Combine(AppContext.BaseDirectory, "wwwroot", "Files");
+            var uploadPath = Path.Combine(Environment.CurrentDirectory, "wwwroot", "Files");
             var filePath = Path.Combine(uploadPath, fileName);
 
             using (var stream = new FileStream(filePath, FileMode.Create))
@@ -289,7 +289,7 @@ namespace NoticeBoard.Controllers
                 try
                 {
                     //editor의 사진이 변경된경우 
-                    var rootPath = Path.Combine(AppContext.BaseDirectory, "wwwroot", "Files");
+                    var rootPath = Path.Combine(Environment.CurrentDirectory, "wwwroot", "Files");
 
                     var beforePost = await _repository.FindAsync(id);
                     var beforeContent = beforePost.Content;
@@ -334,13 +334,13 @@ namespace NoticeBoard.Controllers
                 }
                 //return RedirectToAction(nameof(Index));
             }
-            if (Files.Count != 0)
+            if (Files.Count > 0)
             {
-                var uploadPath = Path.Combine(AppContext.BaseDirectory, "wwwroot", "Files");
+                var uploadPath = Path.Combine(Environment.CurrentDirectory, "wwwroot", "Files");
                 var files = Request.Form.Files;
                 try
                 {
-                    for (var i = 0; i < files.Count; i++)
+                    for (var i = 0; i < Files.Count; i++)
                     {
                         var file = files[i];
                         string filePath = Path.Combine(uploadPath, file.FileName).Replace("\\", "/");
@@ -425,7 +425,7 @@ namespace NoticeBoard.Controllers
             var content = post.Content;
             var regex = new Regex("<img[^>]+src\\s*=\\s*['\"]([^'\"]+)['\"][^>]*>");
             var match = regex.Match(content);
-            var rootPath = Path.Combine(AppContext.BaseDirectory, "wwwroot", "Files");
+            var rootPath = Path.Combine(Environment.CurrentDirectory, "wwwroot", "Files");
             //foreach (Match match in matches) //져러장 업로드는 돈내야 한단다
             //{
             var imageUrl = match.Groups[1].Value;
@@ -485,7 +485,7 @@ namespace NoticeBoard.Controllers
                 var content = post.Content;
                 var regex = new Regex("<img[^>]+src\\s*=\\s*['\"]([^'\"]+)['\"][^>]*>");
                 var match = regex.Match(content);
-                var rootPath = Path.Combine(AppContext.BaseDirectory, "wwwroot", "Files");
+                var rootPath = Path.Combine(Environment.CurrentDirectory, "wwwroot", "Files");
                 //foreach (Match match in matches)
                 //{
                 var imageUrl = match.Groups[1].Value;
