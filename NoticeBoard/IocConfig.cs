@@ -8,7 +8,7 @@ namespace NoticeBoard
     {
         public static IServiceCollection Configure(IServiceCollection services)
         {
-            services.AddDbContext< IAppDbContext, AppDbContext > (options => options.UseInMemoryDatabase("MockDb"));
+            services.AddDbContext< IAppDbContext, AppDbContext > (options => options.UseInMemoryDatabase("TestDb"));
             services.AddScoped<INoticeBoardRepository, EFNoticeboardRepository>();
             services.AddMvc();
             return services;
