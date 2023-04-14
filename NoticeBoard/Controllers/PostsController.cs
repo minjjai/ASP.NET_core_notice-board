@@ -17,6 +17,7 @@ using NoticeBoard.Migrations;
 using System.Text.RegularExpressions;
 using NoticeBoard.Core.Interfaces;
 using NoticeBoard.Infrastructure;
+using NuGet.Protocol.Core.Types;
 
 namespace NoticeBoard.Controllers
 {
@@ -36,10 +37,9 @@ namespace NoticeBoard.Controllers
             {
                 return Problem("Entity set 'NoticeBoard.Post'  is null.");
             }
-            PostsViewModel? viewModel = null;
+                PostsViewModel? viewModel = null;
             try
             {
-
                 int pageSize = 8;
                 int pageNumber = page.HasValue && page.Value > 0 ? page.Value : 1;
                 //페이지값이 널인경우 1을 반환 1보다 안작아서 페이지값가져옴 페이지가 널이아니면 페이지값반환 1보다 작을시 1을 반환
@@ -75,8 +75,7 @@ namespace NoticeBoard.Controllers
                         posts = posts.OrderByDescending(s => s.Views);
                         break;
                 }
-
-                var totalPosts = await posts.CountAsync();
+                var totalPosts = _repository.SelectCountAsync();
                 var totalPages = (int)Math.Ceiling((decimal)totalPosts / pageSize);
                 var categories = await _repository.SelectAsync();
 
@@ -94,16 +93,16 @@ namespace NoticeBoard.Controllers
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.ToString());
+                Console.WriteLine(ex.Message);
+                return View(null);
             }
-
             return View(viewModel);
         }
 
         // GET: Posts/Details/5
         public async Task<IActionResult> Details(int id)
         {
-            if ( _repository.Posts() == null)
+            if (_repository.Posts() == null)
             {
                 return NotFound();
             }
@@ -172,7 +171,7 @@ namespace NoticeBoard.Controllers
                         FileData = System.IO.File.ReadAllBytes(filePath),
                         PostId = post.PostId
                     };
-                   await _repository.AttachAsync(attachFile); //이미 데이터베이스에 있는 엔터티를 수정하려는 경우 사용
+                    await _repository.AttachAsync(attachFile); //이미 데이터베이스에 있는 엔터티를 수정하려는 경우 사용
                 }
             }
 
@@ -277,7 +276,7 @@ namespace NoticeBoard.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [FromForm] Post post, ICollection<IFormFile> Files, [FromForm] string? FileId = null )
+        public async Task<IActionResult> Edit(int id, [FromForm] Post post, ICollection<IFormFile> Files, [FromForm] string? FileId = null)
         {
             if (id != post.PostId)
             {
@@ -319,7 +318,7 @@ namespace NoticeBoard.Controllers
                     Post.Content = post.Content;
                     Post.LastUpdated = datetime;
                     Post.Category = post.Category;
-                   await _repository.UpdateAsync(Post);
+                    await _repository.UpdateAsync(Post);
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -357,7 +356,7 @@ namespace NoticeBoard.Controllers
                             PostId = post.PostId
                         };
 
-                       await _repository.AttachAsync(attachFile);
+                        await _repository.AttachAsync(attachFile);
                     }
                 }
                 catch (Exception)
@@ -383,7 +382,7 @@ namespace NoticeBoard.Controllers
                     var deleteAttachFileId = await _repository.FindAsyncA(intFileId); //Id를 반환하는 건가.. 변수 이름 왜이럼
                     if (deleteAttachFileId != null)
                     {
-                      await  _repository.RemoveAttachFile(deleteAttachFileId);///?
+                        await _repository.RemoveAttachFile(deleteAttachFileId);///?
                     }
                     await _repository.SaveChangesAsync();
                 }
@@ -415,7 +414,7 @@ namespace NoticeBoard.Controllers
 
             foreach (var attachfile in attachfiles)
             {
-               await _repository.RemoveAttachFile(attachfile);
+                await _repository.RemoveAttachFile(attachfile);
             }
 
             await _repository.RemoveComments(id);
@@ -475,7 +474,7 @@ namespace NoticeBoard.Controllers
 
                 foreach (var attachfile in attachfiles)
                 {
-                   await _repository.RemoveAttachFile(attachfile);
+                    await _repository.RemoveAttachFile(attachfile);
                 }
 
                 var comments = _repository.RemoveComments(intId);
@@ -542,7 +541,7 @@ namespace NoticeBoard.Controllers
             var comment = await _repository.FIndAsyncComment(id);
             if (comment != null)
             {
-               await _repository.RemoveComment(comment);
+                await _repository.RemoveComment(comment);
             }
 
             await _repository.SaveChangesAsync();

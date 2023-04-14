@@ -13,6 +13,7 @@ namespace NoticeBoard.Core.Interfaces
         //IQueryable<Post> Posts();
         //void AddPosts(Post post);
         DbSet<Post> Posts();
+        int SelectCountAsync();
         Task SaveChangesAsync();
         Task<List<SelectListItem>> SelectAsync();
         Task AddAsync(Post post);
@@ -33,6 +34,7 @@ namespace NoticeBoard.Core.Interfaces
         Task RemovePost(Post post);
         Task UpdateAsyncComment(Comment comment);
         DbSet<Comment> Comments();
+        DbSet<AttachFile> AttachFiles();
         ValueTask<Comment?> FIndAsyncComment(int id);
         Task RemoveComment(Comment comment);
         ValueTask<Post?> FindAsyncP(int id);

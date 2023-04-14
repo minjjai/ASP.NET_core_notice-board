@@ -44,19 +44,25 @@ namespace NoticeBoard.Infrastructure
         {
             return _context.Posts;
         }
-
+        public int SelectCountAsync()
+        {
+            var posts = from m in _context.Posts
+                        select m;
+            return posts.Count();
+        }
         public Task SaveChangesAsync()
         {
-             return _context.SaveChangesAsync();
+            return _context.SaveChangesAsync();
         }
-        public Task<List<SelectListItem>> SelectAsync()
+        public async Task<List<SelectListItem>> SelectAsync()
         {
-            return _context.FixedCategories.Select(c => new SelectListItem
-            {
-                Value = c.Categories,
-                Text = c.Categories
-            }).ToListAsync();
-
+            var selectListItem = await _context.FixedCategories
+                .Select(c => new SelectListItem
+                {
+                    Value = c.Categories,
+                    Text = c.Categories
+                }).ToListAsync();
+            return selectListItem;
         }
         public Task<Post?> FindAsync(int id)
         {
@@ -72,7 +78,7 @@ namespace NoticeBoard.Infrastructure
         }
         public Task AttachAsync(AttachFile attachFile)
         {
-             _context.AttachFiles.Attach(attachFile);
+            _context.AttachFiles.Attach(attachFile);
             return _context.SaveChangesAsync();
         }
 
@@ -85,7 +91,7 @@ namespace NoticeBoard.Infrastructure
             return _context.FixedCategories.ToListAsync();
         }
 
-        public Task <List<AttachFile>> FindList(int id)
+        public Task<List<AttachFile>> FindList(int id)
         {
             return _context.AttachFiles.Where(p => p.PostId == id).ToListAsync();
         }
@@ -121,13 +127,13 @@ namespace NoticeBoard.Infrastructure
         public Task RemoveAttachFile(AttachFile attachfile)
         {
             _context.AttachFiles.Remove(attachfile);
-            return _context.SaveChangesAsync(); 
+            return _context.SaveChangesAsync();
         }
 
         public Task<List<string>> SelectByPostId(int id)
         {
             return _context.AttachFiles.Where(p => p.PostId == id)
-                .Select(p => p.FilePath) .ToListAsync();
+                .Select(p => p.FilePath).ToListAsync();
         }
         public Task<List<AttachFile>> FindListAsyncA(int id)
         {
@@ -139,8 +145,8 @@ namespace NoticeBoard.Infrastructure
         public async Task RemoveComments(int id)
         {
             var comments = _context.Comments.Where(c => c.PostId == id);
-                 _context.Comments.RemoveRange(comments);
-             await _context.SaveChangesAsync();
+            _context.Comments.RemoveRange(comments);
+            await _context.SaveChangesAsync();
         }
 
         public ValueTask<Post?> FindAsyncP(int id)
@@ -150,7 +156,7 @@ namespace NoticeBoard.Infrastructure
 
         public async Task RemovePost(Post post)
         {
-             _context.Posts.Remove(post);
+            _context.Posts.Remove(post);
             await _context.SaveChangesAsync();
         }
 
@@ -164,15 +170,18 @@ namespace NoticeBoard.Infrastructure
         {
             return _context.Comments;
         }
-
+        public DbSet<AttachFile> AttachFiles()
+        {
+            return _context.AttachFiles;
+        }
         public ValueTask<Comment?> FIndAsyncComment(int id)
         {
             return _context.Comments.FindAsync(id);
         }
-        
+
         public async Task RemoveComment(Comment comment)
         {
-             _context.Comments.Remove(comment);
+            _context.Comments.Remove(comment);
             await _context.SaveChangesAsync();
         }
         public async Task<bool> PostExistsAsync(int id)
